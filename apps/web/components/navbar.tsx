@@ -17,6 +17,7 @@ import clsx from "clsx";
 
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { WalletButton } from "@/components/wallet-button";
 import { GithubIcon, TwitterIcon, CartelLogo } from "@/components/icons";
 
 export const Navbar = () => {
@@ -64,9 +65,7 @@ export const Navbar = () => {
           <ThemeSwitch />
         </NavbarItem>
         <NavbarItem>
-          <Chip color="success" variant="dot">
-            Connected
-          </Chip>
+          <WalletButton />
         </NavbarItem>
       </NavbarContent>
 
