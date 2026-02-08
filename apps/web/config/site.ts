@@ -1,8 +1,8 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Agent Cartel",
-  description: "Coordinated AI agents dominating nad.fun token launches on Monad",
+  name: "Freezy",
+  description: "Social AI Trading Agent for nad.fun on Monad",
   navItems: [
     {
       label: "Dashboard",
@@ -32,8 +32,8 @@ export const siteConfig = {
     },
   ],
   links: {
-    github: "https://github.com/agent-cartel",
-    twitter: "https://twitter.com/agentcartel",
+    github: "https://github.com/freezy-app",
+    twitter: "https://twitter.com/freezy_app",
     nadfun: "https://nad.fun",
     monad: "https://monad.xyz",
   },

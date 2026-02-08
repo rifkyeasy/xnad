@@ -1,8 +1,8 @@
 {
-  "name": "@cartel/blockchain",
+  "name": "@freezy/blockchain",
   "version": "0.1.0",
   "private": true,
-  "description": "Monad blockchain and nad.fun integration for Agent Cartel",
+  "description": "Monad blockchain and nad.fun integration for Freezy",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -30,8 +30,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@cartel/config": "workspace:*",
-    "@cartel/shared": "workspace:*",
+    "@freezy/config": "workspace:*",
+    "@freezy/shared": "workspace:*",
     "viem": "^2.23.2"
   },
   "devDependencies": {

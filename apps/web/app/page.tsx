@@ -1,282 +1,213 @@
 "use client";
 
-import { useState } from "react";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
-import { Progress } from "@heroui/progress";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Button } from "@heroui/button";
-import { Spinner } from "@heroui/spinner";
-import { Skeleton } from "@heroui/skeleton";
-import { Input } from "@heroui/input";
-import { useAccount } from "wagmi";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-} from "@heroui/modal";
+import { useAccount, useBalance } from "wagmi";
+import { useRouter } from "next/navigation";
 
 import { title } from "@/components/primitives";
-import {
-  useCartelStats,
-  useTokenLaunches,
-  useInitializeCartel,
-  useUpdateTreasuryWallet,
-  useResetCartel,
-} from "@/hooks/useCartelData";
-import { useCartelStore } from "@/stores/cartel";
-import { truncateAddress } from "@/lib/api";
+import { useAgentStore } from "@/stores/agent";
+import { useVaultFactory, useVault } from "@/hooks/useVault";
 
 export default function Dashboard() {
+  const router = useRouter();
   const { address, isConnected } = useAccount();
-  const [treasuryWallet, setTreasuryWallet] = useState("");
-  const [newTreasuryWallet, setNewTreasuryWallet] = useState("");
+  const { data: balance } = useBalance({ address });
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { selectedStrategy, vaultAddress, positions, autoTrade } = useAgentStore();
+  const { hasVault } = useVaultFactory(address);
+  const { balance: vaultBalance } = useVault(vaultAddress);
 
-  const { data: cartelData, isLoading: statsLoading } = useCartelStats();
-  const { isLoading: launchesLoading } = useTokenLaunches();
-  const { mutate: initCartel, isPending: isInitializing } = useInitializeCartel();
-  const { mutate: updateTreasury, isPending: isUpdating } = useUpdateTreasuryWallet();
-  const { mutate: resetCartel, isPending: isResetting } = useResetCartel();
+  // Calculate portfolio stats
+  const totalPositionValue = positions.reduce(
+    (sum, p) => sum + parseFloat(p.currentValue || "0"),
+    0
+  );
+  const totalPnl = positions.reduce(
+    (sum, p) => sum + parseFloat(p.unrealizedPnl || "0"),
+    0
+  );
 
-  const { stats, currentLaunch } = useCartelStore();
-  const isLoading = statsLoading || launchesLoading;
-  const isInitialized = cartelData?.initialized;
-
-  const handleUpdateTreasury = () => {
-    if (!newTreasuryWallet) return;
-    updateTreasury(newTreasuryWallet, {
-      onSuccess: () => {
-        onClose();
-        setNewTreasuryWallet("");
-      },
-    });
+  const strategyLabels = {
+    CONSERVATIVE: "Conservative",
+    BALANCED: "Balanced",
+    AGGRESSIVE: "Aggressive",
   };
 
-  const handleReset = () => {
-    if (confirm("Reset cartel? This deletes all data.")) {
-      resetCartel();
-      onClose();
-    }
+  const strategyColors = {
+    CONSERVATIVE: "success" as const,
+    BALANCED: "primary" as const,
+    AGGRESSIVE: "danger" as const,
   };
-
-  // Show initialization UI if not set up
-  if (!statsLoading && !isInitialized) {
-    return (
-      <div className="flex flex-col gap-6 items-center justify-center min-h-[60vh]">
-        <h1 className={title()}>Initialize Cartel</h1>
-        <p className="text-default-500 text-center max-w-md">
-          Set up your cartel with a treasury wallet address.
-        </p>
-        <Card className="w-full max-w-md p-4">
-          <CardBody className="gap-4">
-            <Input
-              label="Treasury Wallet"
-              placeholder="0x..."
-              value={treasuryWallet || (isConnected ? address : "")}
-              onValueChange={setTreasuryWallet}
-            />
-            <Button
-              color="primary"
-              size="lg"
-              className="w-full"
-              isLoading={isInitializing}
-              onPress={() => initCartel({ treasuryWallet: treasuryWallet || address || "" })}
-              isDisabled={!treasuryWallet && !address}
-            >
-              Initialize
-            </Button>
-          </CardBody>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className={title()}>Dashboard</h1>
-            {isLoading && <Spinner size="sm" />}
-          </div>
-          <p className="text-default-500 mt-1">Agent Cartel on nad.fun</p>
+          <h1 className={title()}>Dashboard</h1>
+          <p className="text-default-500 mt-1">Freezy - Social AI Trading Agent</p>
         </div>
-        <Button variant="flat" size="sm" onPress={onOpen}>
-          Settings
-        </Button>
+        {selectedStrategy && (
+          <Chip color={strategyColors[selectedStrategy]} size="lg">
+            {strategyLabels[selectedStrategy]}
+          </Chip>
+        )}
       </div>
 
-      {/* Stats */}
+      {/* Wallet Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardBody className="text-center py-4">
-            <p className="text-default-500 text-sm">Members</p>
-            {statsLoading ? (
-              <Skeleton className="h-8 w-12 mx-auto mt-1 rounded-lg" />
-            ) : (
-              <p className="text-2xl font-bold">{stats.members}</p>
-            )}
+            <p className="text-default-500 text-sm">Wallet Balance</p>
+            <p className="text-2xl font-bold">
+              {balance ? parseFloat(balance.formatted).toFixed(4) : "0"} MON
+            </p>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center py-4">
-            <p className="text-default-500 text-sm">Treasury</p>
-            {statsLoading ? (
-              <Skeleton className="h-8 w-16 mx-auto mt-1 rounded-lg" />
-            ) : (
-              <p className="text-2xl font-bold">{stats.treasury} MON</p>
-            )}
+            <p className="text-default-500 text-sm">Vault Balance</p>
+            <p className="text-2xl font-bold">
+              {vaultBalance ? parseFloat(vaultBalance).toFixed(4) : "0"} MON
+            </p>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center py-4">
-            <p className="text-default-500 text-sm">Graduated</p>
-            {statsLoading ? (
-              <Skeleton className="h-8 w-8 mx-auto mt-1 rounded-lg" />
-            ) : (
-              <p className="text-2xl font-bold">{stats.tokensGraduated}</p>
-            )}
+            <p className="text-default-500 text-sm">Positions Value</p>
+            <p className="text-2xl font-bold">
+              {totalPositionValue.toFixed(4)} MON
+            </p>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center py-4">
-            <p className="text-default-500 text-sm">Profit</p>
-            {statsLoading ? (
-              <Skeleton className="h-8 w-16 mx-auto mt-1 rounded-lg" />
-            ) : (
-              <p className="text-2xl font-bold text-success">{stats.totalProfit} MON</p>
-            )}
+            <p className="text-default-500 text-sm">Unrealized P&L</p>
+            <p className={`text-2xl font-bold ${totalPnl >= 0 ? "text-success" : "text-danger"}`}>
+              {totalPnl >= 0 ? "+" : ""}{totalPnl.toFixed(4)} MON
+            </p>
           </CardBody>
         </Card>
       </div>
 
-      {/* Current Launch */}
+      {/* Agent Status */}
       <Card className="p-2">
         <CardHeader className="flex justify-between">
           <div>
-            <h2 className="text-lg font-bold">Current Token</h2>
-            <p className="text-default-500 text-sm">Active launch being supported</p>
+            <h2 className="text-lg font-bold">AI Agent Status</h2>
+            <p className="text-default-500 text-sm">Your trading agent configuration</p>
           </div>
-          {currentLaunch && (
-            <Chip color="success" variant="dot">Live</Chip>
+          {autoTrade && (
+            <Chip color="success" variant="dot">Active</Chip>
           )}
         </CardHeader>
         <Divider />
         <CardBody className="gap-4">
-          {launchesLoading ? (
-            <div className="flex flex-col gap-3">
-              <Skeleton className="h-6 w-24 rounded-lg" />
-              <Skeleton className="h-2 w-full rounded-lg" />
+          {!isConnected ? (
+            <div className="text-center py-8 text-default-500">
+              Connect your wallet to get started
             </div>
-          ) : currentLaunch ? (
+          ) : !hasVault ? (
+            <div className="text-center py-8">
+              <p className="text-default-500 mb-4">
+                Set up your AI trading agent to start automated trading
+              </p>
+              <Button color="primary" size="lg" onPress={() => router.push("/agent")}>
+                Set Up Agent
+              </Button>
+            </div>
+          ) : (
             <>
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-xl font-bold">${currentLaunch.symbol}</p>
-                  <p className="text-default-500 text-sm">{currentLaunch.name}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-default-100 rounded-lg">
+                  <p className="text-sm text-default-500">Strategy</p>
+                  <p className="font-bold">
+                    {selectedStrategy ? strategyLabels[selectedStrategy] : "Not set"}
+                  </p>
                 </div>
-                <div className="text-right">
-                  <p className="font-medium">{currentLaunch.marketCap} MON</p>
-                  <p className="text-sm text-default-500">{currentLaunch.holders} holders</p>
+                <div className="p-3 bg-default-100 rounded-lg">
+                  <p className="text-sm text-default-500">Auto-Trade</p>
+                  <p className="font-bold">{autoTrade ? "Enabled" : "Disabled"}</p>
                 </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span>Graduation</span>
-                  <span className="font-medium">{currentLaunch.progress.toFixed(1)}%</span>
+                <div className="p-3 bg-default-100 rounded-lg">
+                  <p className="text-sm text-default-500">Positions</p>
+                  <p className="font-bold">{positions.length}</p>
                 </div>
-                <Progress value={currentLaunch.progress} color="success" className="h-2" />
+                <div className="p-3 bg-default-100 rounded-lg">
+                  <p className="text-sm text-default-500">Vault</p>
+                  <p className="font-mono text-sm truncate">
+                    {vaultAddress ? `${vaultAddress.slice(0, 6)}...${vaultAddress.slice(-4)}` : "Not created"}
+                  </p>
+                </div>
               </div>
             </>
-          ) : (
-            <div className="text-center py-6 text-default-500">
-              No active launch
-            </div>
           )}
         </CardBody>
         <CardFooter className="gap-2">
           <Button
             color="primary"
             className="flex-1"
-            as="a"
-            href="/trade"
+            onPress={() => router.push("/agent")}
           >
-            Trade Tokens
+            {hasVault ? "Manage Agent" : "Set Up Agent"}
           </Button>
-          {currentLaunch && (
-            <Button
-              variant="flat"
-              as="a"
-              href={`https://nad.fun/token/${currentLaunch.address}`}
-              target="_blank"
-            >
-              nad.fun
-            </Button>
-          )}
+          <Button
+            variant="flat"
+            onPress={() => router.push("/trade")}
+          >
+            Manual Trade
+          </Button>
         </CardFooter>
       </Card>
 
-      {/* Settings Modal */}
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalContent>
-          <ModalHeader>Settings</ModalHeader>
-          <ModalBody className="gap-4">
-            <div className="p-3 bg-default-100 rounded-lg">
-              <p className="text-sm text-default-500">Treasury Wallet</p>
-              <p className="font-mono text-sm break-all">
-                {cartelData?.treasuryWallet || "Not set"}
-              </p>
-            </div>
-
-            <Input
-              label="New Treasury Wallet"
-              placeholder="0x..."
-              value={newTreasuryWallet}
-              onValueChange={setNewTreasuryWallet}
-            />
-
-            {isConnected && (
-              <Button
-                variant="flat"
-                size="sm"
-                onPress={() => setNewTreasuryWallet(address || "")}
-              >
-                Use Connected ({truncateAddress(address || "")})
-              </Button>
-            )}
-
-            <Button
-              color="primary"
-              isLoading={isUpdating}
-              onPress={handleUpdateTreasury}
-              isDisabled={!newTreasuryWallet}
-            >
-              Update Treasury
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-4">
+          <CardBody className="text-center gap-3">
+            <span className="text-3xl">🤖</span>
+            <h3 className="font-bold">AI Analysis</h3>
+            <p className="text-sm text-default-500">
+              Get personalized strategy based on your X profile
+            </p>
+            <Button variant="flat" size="sm" onPress={() => router.push("/agent")}>
+              Analyze
             </Button>
-
-            <Divider />
-
+          </CardBody>
+        </Card>
+        <Card className="p-4">
+          <CardBody className="text-center gap-3">
+            <span className="text-3xl">📈</span>
+            <h3 className="font-bold">Trade Tokens</h3>
+            <p className="text-sm text-default-500">
+              Buy and sell tokens on nad.fun bonding curve
+            </p>
+            <Button variant="flat" size="sm" onPress={() => router.push("/trade")}>
+              Trade
+            </Button>
+          </CardBody>
+        </Card>
+        <Card className="p-4">
+          <CardBody className="text-center gap-3">
+            <span className="text-3xl">🔗</span>
+            <h3 className="font-bold">nad.fun</h3>
+            <p className="text-sm text-default-500">
+              Explore tokens on the nad.fun platform
+            </p>
             <Button
-              color="danger"
               variant="flat"
-              isLoading={isResetting}
-              onPress={handleReset}
+              size="sm"
+              as="a"
+              href="https://nad.fun"
+              target="_blank"
             >
-              Reset Cartel
+              Explore
             </Button>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={onClose}>Close</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </CardBody>
+        </Card>
+      </div>
     </div>
   );
 }

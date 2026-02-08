@@ -1,8 +1,8 @@
 {
-  "name": "@cartel/shared",
+  "name": "@freezy/shared",
   "version": "0.1.0",
   "private": true,
-  "description": "Shared utilities and types for Agent Cartel",
+  "description": "Shared utilities and types for Freezy",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -30,7 +30,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@cartel/config": "workspace:*",
+    "@freezy/config": "workspace:*",
     "viem": "^2.23.2"
   },
   "devDependencies": {

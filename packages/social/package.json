@@ -1,8 +1,8 @@
 {
-  "name": "@cartel/social",
+  "name": "@freezy/social",
   "version": "0.1.0",
   "private": true,
-  "description": "Moltbook and social platform integration for Agent Cartel",
+  "description": "Social platform integration for Freezy",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -22,8 +22,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@cartel/config": "workspace:*",
-    "@cartel/shared": "workspace:*"
+    "@freezy/config": "workspace:*",
+    "@freezy/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.13.1",
