@@ -17,6 +17,8 @@ import {
 } from "@heroui/modal";
 import { useAccount } from "wagmi";
 
+import { usePublicClient } from "wagmi";
+import { type Address } from "viem";
 import { title } from "@/components/primitives";
 import {
   useBuyToken,
@@ -26,7 +28,7 @@ import {
   useTokenBalance,
   useTokenProgress,
 } from "@/hooks/useTrading";
-import { fetchToken } from "@/lib/api";
+import { erc20Abi } from "@/lib/contracts";
 
 interface TokenInfo {
   address: string;
@@ -36,6 +38,7 @@ interface TokenInfo {
 
 export default function TradePage() {
   const { isConnected } = useAccount();
+  const publicClient = usePublicClient();
   const { buyToken, isPending: isBuying } = useBuyToken();
   const { sellToken, isPending: isSelling } = useSellToken();
 
@@ -64,26 +67,39 @@ export default function TradePage() {
   const { balance: tokenBalance } = useTokenBalance(tokenInfo?.address || "");
   const { progress, isLoading: progressLoading } = useTokenProgress(tokenInfo?.address || "");
 
-  // Load token from nad.fun
+  // Load token from blockchain
   const loadToken = async () => {
-    if (!tokenAddress || tokenAddress.length < 42) return;
+    if (!tokenAddress || tokenAddress.length < 42 || !publicClient) return;
 
     setLoadingToken(true);
     setTokenError(null);
 
     try {
-      const data = await fetchToken(tokenAddress);
-      if (data && data.symbol) {
+      // Read token info directly from blockchain
+      const [symbol, name] = await Promise.all([
+        publicClient.readContract({
+          address: tokenAddress as Address,
+          abi: erc20Abi,
+          functionName: "symbol",
+        }),
+        publicClient.readContract({
+          address: tokenAddress as Address,
+          abi: erc20Abi,
+          functionName: "name",
+        }).catch(() => null), // name is optional
+      ]);
+
+      if (symbol) {
         setTokenInfo({
           address: tokenAddress,
-          symbol: data.symbol,
-          name: data.name || data.symbol,
+          symbol: symbol as string,
+          name: (name as string) || (symbol as string),
         });
       } else {
-        setTokenError("Token not found on nad.fun");
+        setTokenError("Invalid token address");
       }
     } catch {
-      setTokenError("Failed to load token");
+      setTokenError("Failed to load token - check address");
     } finally {
       setLoadingToken(false);
     }
