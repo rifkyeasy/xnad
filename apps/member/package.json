@@ -1,0 +1,30 @@
+{
+  "name": "@cartel/member",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cartel Member Agent - A member of Agent Cartel",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@cartel/blockchain": "workspace:*",
+    "@cartel/config": "workspace:*",
+    "@cartel/shared": "workspace:*",
+    "@cartel/social": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "eslint": "^9.19.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.23.0"
+  }
+}

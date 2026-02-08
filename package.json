@@ -1,0 +1,52 @@
+{
+  "name": "agent-cartel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agent Cartel - Coordinated AI agents for Moltiverse Hackathon",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/agent-cartel"
+  },
+  "author": "Agent Cartel Team",
+  "license": "MIT",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "dev:boss": "turbo run dev --filter=@cartel/boss",
+    "dev:member": "turbo run dev --filter=@cartel/member",
+    "start": "turbo run start",
+    "start:boss": "turbo run start --filter=@cartel/boss",
+    "start:member": "turbo run start --filter=@cartel/member",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch",
+    "clean": "turbo run clean && rm -rf node_modules .turbo",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
+    "prettier": "^3.4.2",
+    "turbo": "^2.4.2",
+    "typescript": "^5.7.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
+}

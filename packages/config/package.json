@@ -1,0 +1,31 @@
+{
+  "name": "@cartel/config",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared configuration for Agent Cartel",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./eslint": "./eslint.config.mjs",
+    "./typescript": "./tsconfig.json"
+  },
+  "files": ["src", "eslint.config.mjs", "tsconfig.json"],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "viem": "^2.23.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "eslint": "^9.19.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.23.0"
+  }
+}
