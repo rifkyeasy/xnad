@@ -6,7 +6,6 @@ import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
 import { Progress } from "@heroui/progress";
 import { Spinner } from "@heroui/spinner";
-import { Skeleton } from "@heroui/skeleton";
 import { Input } from "@heroui/input";
 import {
   Modal,
@@ -19,47 +18,78 @@ import {
 import { useAccount } from "wagmi";
 
 import { title } from "@/components/primitives";
-import { useTokenLaunches } from "@/hooks/useCartelData";
-import { useCartelStore } from "@/stores/cartel";
 import {
   useBuyToken,
   useSellToken,
   useBuyQuote,
   useSellQuote,
   useTokenBalance,
+  useTokenProgress,
 } from "@/hooks/useTrading";
+import { fetchToken } from "@/lib/api";
+
+interface TokenInfo {
+  address: string;
+  symbol: string;
+  name: string;
+}
 
 export default function TradePage() {
   const { isConnected } = useAccount();
-  const { isLoading } = useTokenLaunches();
-  const { launches } = useCartelStore();
   const { buyToken, isPending: isBuying } = useBuyToken();
   const { sellToken, isPending: isSelling } = useSellToken();
 
+  // Token input
+  const [tokenAddress, setTokenAddress] = useState("");
+  const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null);
+  const [loadingToken, setLoadingToken] = useState(false);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+
   // Trade modal
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [selectedToken, setSelectedToken] = useState<{ address: string; symbol: string } | null>(null);
   const [tradeAmount, setTradeAmount] = useState("");
   const [tradeType, setTradeType] = useState<"buy" | "sell">("buy");
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Quotes
+  // Quotes & balance for current token
   const { amountOut: buyQuote, isLoading: quoteLoading } = useBuyQuote(
-    selectedToken?.address || "",
+    tokenInfo?.address || "",
     tradeType === "buy" ? tradeAmount : "0"
   );
   const { amountOut: sellQuote } = useSellQuote(
-    selectedToken?.address || "",
+    tokenInfo?.address || "",
     tradeType === "sell" ? tradeAmount : "0"
   );
-  const { balance: tokenBalance } = useTokenBalance(selectedToken?.address || "");
+  const { balance: tokenBalance } = useTokenBalance(tokenInfo?.address || "");
+  const { progress, isLoading: progressLoading } = useTokenProgress(tokenInfo?.address || "");
 
-  // All tradeable tokens
-  const tokens = launches.filter((l) => l.status === "live" || l.status === "graduated");
+  // Load token from nad.fun
+  const loadToken = async () => {
+    if (!tokenAddress || tokenAddress.length < 42) return;
 
-  const openTrade = (token: { address: string; symbol: string }, type: "buy" | "sell") => {
-    setSelectedToken(token);
+    setLoadingToken(true);
+    setTokenError(null);
+
+    try {
+      const data = await fetchToken(tokenAddress);
+      if (data && data.symbol) {
+        setTokenInfo({
+          address: tokenAddress,
+          symbol: data.symbol,
+          name: data.name || data.symbol,
+        });
+      } else {
+        setTokenError("Token not found on nad.fun");
+      }
+    } catch {
+      setTokenError("Failed to load token");
+    } finally {
+      setLoadingToken(false);
+    }
+  };
+
+  const openTrade = (type: "buy" | "sell") => {
     setTradeType(type);
     setTradeAmount("");
     setTxHash(null);
@@ -68,15 +98,15 @@ export default function TradePage() {
   };
 
   const handleTrade = async () => {
-    if (!selectedToken || !tradeAmount || !isConnected) return;
+    if (!tokenInfo || !tradeAmount || !isConnected) return;
 
     setError(null);
     try {
       if (tradeType === "buy") {
-        const result = await buyToken(selectedToken.address, tradeAmount, 1);
+        const result = await buyToken(tokenInfo.address, tradeAmount, 1);
         setTxHash(result.hash);
       } else {
-        const result = await sellToken(selectedToken.address, tradeAmount, 1);
+        const result = await sellToken(tokenInfo.address, tradeAmount, 1);
         setTxHash(result.hash);
       }
     } catch (err) {
@@ -89,6 +119,12 @@ export default function TradePage() {
     setTradeAmount("");
     setTxHash(null);
     setError(null);
+  };
+
+  const clearToken = () => {
+    setTokenInfo(null);
+    setTokenAddress("");
+    setTokenError(null);
   };
 
   return (
@@ -106,86 +142,112 @@ export default function TradePage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i}>
-              <CardBody className="gap-3">
-                <Skeleton className="h-6 w-20 rounded-lg" />
-                <Skeleton className="h-2 w-full rounded-lg" />
-                <div className="flex gap-2">
-                  <Skeleton className="h-9 flex-1 rounded-lg" />
-                  <Skeleton className="h-9 flex-1 rounded-lg" />
-                </div>
-              </CardBody>
-            </Card>
-          ))
-        ) : tokens.length > 0 ? (
-          tokens.map((token) => (
-            <Card key={token.id}>
-              <CardBody className="gap-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl font-bold">${token.symbol}</span>
-                      <Chip
-                        size="sm"
-                        color={token.status === "graduated" ? "primary" : "success"}
-                        variant="flat"
-                      >
-                        {token.status}
-                      </Chip>
-                    </div>
-                    <p className="text-sm text-default-500">{token.name}</p>
-                  </div>
-                  <span className="text-sm font-medium">{token.marketCap} MON</span>
-                </div>
-
-                {token.status === "live" && (
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Progress</span>
-                      <span>{token.progress.toFixed(0)}%</span>
-                    </div>
-                    <Progress value={token.progress} size="sm" color="success" />
-                  </div>
-                )}
-              </CardBody>
-              <CardFooter className="gap-2 pt-0">
-                <Button
-                  color="success"
-                  size="sm"
-                  className="flex-1"
-                  onPress={() => openTrade({ address: token.address, symbol: token.symbol }, "buy")}
-                  isDisabled={!isConnected}
-                >
-                  Buy
-                </Button>
-                <Button
-                  color="danger"
-                  variant="flat"
-                  size="sm"
-                  className="flex-1"
-                  onPress={() => openTrade({ address: token.address, symbol: token.symbol }, "sell")}
-                  isDisabled={!isConnected}
-                >
-                  Sell
-                </Button>
-              </CardFooter>
-            </Card>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-12 text-default-500">
-            No tokens available
+      {/* Token Input */}
+      <Card>
+        <CardBody className="gap-4">
+          <div className="flex gap-2">
+            <Input
+              label="Token Address"
+              placeholder="0x... (paste nad.fun token address)"
+              value={tokenAddress}
+              onValueChange={setTokenAddress}
+              className="flex-1"
+            />
+            <Button
+              color="primary"
+              onPress={loadToken}
+              isLoading={loadingToken}
+              isDisabled={!tokenAddress || tokenAddress.length < 42}
+              className="self-end"
+            >
+              Load
+            </Button>
           </div>
-        )}
-      </div>
+
+          {tokenError && (
+            <p className="text-danger text-sm">{tokenError}</p>
+          )}
+        </CardBody>
+      </Card>
+
+      {/* Token Card */}
+      {tokenInfo && (
+        <Card>
+          <CardBody className="gap-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold">${tokenInfo.symbol}</span>
+                  <Chip size="sm" color="success" variant="flat">
+                    {progress >= 100 ? "graduated" : "live"}
+                  </Chip>
+                </div>
+                <p className="text-default-500">{tokenInfo.name}</p>
+              </div>
+              <Button size="sm" variant="flat" onPress={clearToken}>
+                Clear
+              </Button>
+            </div>
+
+            {!progressLoading && progress < 100 && (
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Graduation Progress</span>
+                  <span className="font-medium">{progress.toFixed(1)}%</span>
+                </div>
+                <Progress value={progress} color="success" className="h-2" />
+              </div>
+            )}
+
+            {parseFloat(tokenBalance) > 0 && (
+              <div className="p-3 bg-default-100 rounded-lg">
+                <p className="text-sm text-default-500">Your Balance</p>
+                <p className="font-medium">{parseFloat(tokenBalance).toFixed(4)} tokens</p>
+              </div>
+            )}
+          </CardBody>
+          <CardFooter className="gap-2">
+            <Button
+              color="success"
+              className="flex-1"
+              onPress={() => openTrade("buy")}
+              isDisabled={!isConnected}
+            >
+              Buy
+            </Button>
+            <Button
+              color="danger"
+              variant="flat"
+              className="flex-1"
+              onPress={() => openTrade("sell")}
+              isDisabled={!isConnected}
+            >
+              Sell
+            </Button>
+            <Button
+              variant="flat"
+              as="a"
+              href={`https://nad.fun/token/${tokenInfo.address}`}
+              target="_blank"
+            >
+              nad.fun
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
+
+      {/* Empty State */}
+      {!tokenInfo && !loadingToken && (
+        <div className="text-center py-12 text-default-500">
+          Enter a nad.fun token address above to start trading
+        </div>
+      )}
 
       {/* Trade Modal */}
       <Modal isOpen={isOpen} onClose={closeTrade}>
         <ModalContent>
           <ModalHeader>
-            {tradeType === "buy" ? "Buy" : "Sell"} ${selectedToken?.symbol}
+            {tradeType === "buy" ? "Buy" : "Sell"} ${tokenInfo?.symbol}
           </ModalHeader>
           <ModalBody className="gap-4">
             {txHash ? (
