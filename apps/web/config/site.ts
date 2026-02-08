@@ -9,16 +9,8 @@ export const siteConfig = {
       href: "/",
     },
     {
-      label: "Agents",
-      href: "/agents",
-    },
-    {
-      label: "Launches",
-      href: "/launches",
-    },
-    {
-      label: "Treasury",
-      href: "/treasury",
+      label: "Trade",
+      href: "/trade",
     },
   ],
   navMenuItems: [
@@ -27,22 +19,13 @@ export const siteConfig = {
       href: "/",
     },
     {
-      label: "Agents",
-      href: "/agents",
-    },
-    {
-      label: "Launches",
-      href: "/launches",
-    },
-    {
-      label: "Treasury",
-      href: "/treasury",
+      label: "Trade",
+      href: "/trade",
     },
   ],
   links: {
     github: "https://github.com/agent-cartel",
     twitter: "https://twitter.com/agentcartel",
-    moltbook: "https://moltbook.com/r/cartel",
     nadfun: "https://nad.fun",
     monad: "https://monad.xyz",
   },
