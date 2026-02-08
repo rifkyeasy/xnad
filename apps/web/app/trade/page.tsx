@@ -272,7 +272,7 @@ export default function TradePage() {
                 <p className="text-sm text-default-500 break-all mb-3">TX: {txHash}</p>
                 <Button
                   as="a"
-                  href={`https://testnet.monadexplorer.com/tx/${txHash}`}
+                  href={`https://monadexplorer.com/tx/${txHash}`}
                   target="_blank"
                   variant="flat"
                   size="sm"

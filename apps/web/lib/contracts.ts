@@ -23,12 +23,12 @@ export const CONTRACTS = {
   },
 } as const;
 
-// Get contracts for current network (default testnet)
+// Get contracts for current network (default mainnet)
 export function getContracts(chainId?: number) {
-  if (chainId === MONAD_MAINNET_CHAIN_ID) {
-    return CONTRACTS.mainnet;
+  if (chainId === MONAD_TESTNET_CHAIN_ID) {
+    return CONTRACTS.testnet;
   }
-  return CONTRACTS.testnet;
+  return CONTRACTS.mainnet;
 }
 
 // Bonding Curve Router ABI (for buying/selling on bonding curve)

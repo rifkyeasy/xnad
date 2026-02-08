@@ -1,7 +1,25 @@
 import { http, createConfig } from "wagmi";
 import { injected, walletConnect } from "wagmi/connectors";
 
-// Monad Testnet chain definition
+// Monad Mainnet chain definition
+export const monadMainnet = {
+  id: 41454,
+  name: "Monad",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Monad",
+    symbol: "MON",
+  },
+  rpcUrls: {
+    default: { http: ["https://monad-mainnet.drpc.org"] },
+  },
+  blockExplorers: {
+    default: { name: "Monad Explorer", url: "https://monadexplorer.com" },
+  },
+  testnet: false,
+} as const;
+
+// Monad Testnet chain definition (kept for reference)
 export const monadTestnet = {
   id: 10143,
   name: "Monad Testnet",
@@ -20,7 +38,7 @@ export const monadTestnet = {
 } as const;
 
 export const wagmiConfig = createConfig({
-  chains: [monadTestnet],
+  chains: [monadMainnet],
   connectors: [
     injected(),
     walletConnect({
@@ -28,7 +46,7 @@ export const wagmiConfig = createConfig({
     }),
   ],
   transports: {
-    [monadTestnet.id]: http(),
+    [monadMainnet.id]: http(),
   },
   ssr: true,
 });
