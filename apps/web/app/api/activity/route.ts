@@ -18,29 +18,36 @@ export async function GET() {
 
     for (const launch of activeTokens) {
       try {
+        // Use /agent/swap-history/:token_id endpoint
         const res = await fetch(
-          `${NADFUN_API}/token/${launch.tokenAddress}/swap?limit=10`
+          `${NADFUN_API}/agent/swap-history/${launch.tokenAddress}?limit=10`
         );
         if (res.ok) {
           const data = await res.json();
-          for (const swap of data.items || []) {
+          for (const swap of data.swaps || []) {
             // Check if this swap is from a cartel agent
+            const swapAccount = swap.account || swap.trader || swap.user;
             const agent = agents.find(
-              (a) => a.wallet.toLowerCase() === swap.account?.toLowerCase()
+              (a) => a.wallet.toLowerCase() === swapAccount?.toLowerCase()
             );
 
+            const isBuy = swap.type === "buy" || swap.is_buy || swap.isBuy;
+            const tokenAmount = swap.token_amount || swap.tokenAmount || "0";
+            const monAmount = swap.mon_amount || swap.monAmount || swap.native_amount || "0";
+            const timestamp = swap.timestamp || swap.created_at || Date.now() / 1000;
+
             activities.push({
-              id: swap.txHash || `${launch.tokenAddress}-${swap.timestamp}`,
-              time: formatRelativeTime(swap.timestamp * 1000),
-              timestamp: swap.timestamp * 1000,
-              agent: agent?.name || truncateAddress(swap.account),
-              action: swap.isBuy
-                ? `Bought ${formatAmount(swap.tokenAmount)} $${launch.symbol}`
-                : `Sold ${formatAmount(swap.tokenAmount)} $${launch.symbol}`,
+              id: swap.tx_hash || swap.txHash || `${launch.tokenAddress}-${timestamp}`,
+              time: formatRelativeTime(timestamp * 1000),
+              timestamp: timestamp * 1000,
+              agent: agent?.name || truncateAddress(swapAccount),
+              action: isBuy
+                ? `Bought ${formatAmount(tokenAmount)} $${launch.symbol}`
+                : `Sold ${formatAmount(tokenAmount)} $${launch.symbol}`,
               type: "trade" as const,
-              txHash: swap.txHash,
+              txHash: swap.tx_hash || swap.txHash,
               tokenSymbol: launch.symbol,
-              amount: formatAmount(swap.monAmount),
+              amount: formatAmount(monAmount),
               isCartelAgent: !!agent,
             });
           }

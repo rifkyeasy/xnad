@@ -71,46 +71,51 @@ export async function fetchTokensByLatestTrade(limit = 20, page = 1) {
   }
 }
 
+// Token info - uses /agent/token/:token_id
 export async function fetchToken(address: string) {
   try {
-    const response = await fetch(`${NADFUN_API}/token/${address}`);
+    const response = await fetch(`${NADFUN_API}/agent/token/${address}`);
     if (!response.ok) throw new Error("Failed to fetch token");
-    return await response.json();
+    const data = await response.json();
+    return data.token_info || data;
   } catch (error) {
     console.error("fetchToken error:", error);
     return null;
   }
 }
 
+// Market data - uses /agent/market/:token_id
 export async function fetchTokenMarket(address: string) {
   try {
-    const response = await fetch(`${NADFUN_API}/token/market/${address}`);
+    const response = await fetch(`${NADFUN_API}/agent/market/${address}`);
     if (!response.ok) throw new Error("Failed to fetch token market");
-    return await response.json();
+    const data = await response.json();
+    return data.market_info || data;
   } catch (error) {
     console.error("fetchTokenMarket error:", error);
     return null;
   }
 }
 
+// Holder count is included in market info - no separate endpoint
 export async function fetchTokenHolders(address: string, limit = 50, page = 1) {
   try {
-    const response = await fetch(
-      `${NADFUN_API}/token/holder/${address}?page=${page}&limit=${limit}`
-    );
-    if (!response.ok) throw new Error("Failed to fetch holders");
-    const data = await response.json();
-    return { items: data.holders || [] };
+    const market = await fetchTokenMarket(address);
+    if (market?.holder_count !== undefined) {
+      return { count: market.holder_count, items: [] };
+    }
+    return { count: 0, items: [] };
   } catch (error) {
     console.error("fetchTokenHolders error:", error);
-    return { items: [] };
+    return { count: 0, items: [] };
   }
 }
 
+// Swap history - uses /agent/swap-history/:token_id
 export async function fetchTokenSwaps(address: string, limit = 50, page = 1) {
   try {
     const response = await fetch(
-      `${NADFUN_API}/token/swap/${address}?page=${page}&limit=${limit}`
+      `${NADFUN_API}/agent/swap-history/${address}?page=${page}&limit=${limit}`
     );
     if (!response.ok) throw new Error("Failed to fetch swaps");
     const data = await response.json();
@@ -121,16 +126,18 @@ export async function fetchTokenSwaps(address: string, limit = 50, page = 1) {
   }
 }
 
+// Account holdings - uses /agent/holdings/:account_id
 export async function fetchAccountPositions(wallet: string, page = 1, limit = 50) {
   try {
     const response = await fetch(
-      `${NADFUN_API}/account/position/${wallet}?position_type=all&page=${page}&limit=${limit}`
+      `${NADFUN_API}/agent/holdings/${wallet}?page=${page}&limit=${limit}`
     );
     if (!response.ok) throw new Error("Failed to fetch positions");
-    return await response.json();
+    const data = await response.json();
+    return { items: data.tokens || [], total_count: data.total_count || 0 };
   } catch (error) {
     console.error("fetchAccountPositions error:", error);
-    return { items: [] };
+    return { items: [], total_count: 0 };
   }
 }
 
@@ -144,9 +151,9 @@ export async function fetchBuyQuote(tokenAddress: string, monAmount: string) {
     const fee = amountIn * 0.01; // 1% fee
     const amountAfterFee = amountIn - fee;
 
-    // Simplified constant product calculation
-    const reserveToken = parseFloat(market.reserveToken || market.virtualToken || "0");
-    const reserveNative = parseFloat(market.reserveNative || market.virtualNative || "0");
+    // Use reserve_token and reserve_native from API response
+    const reserveToken = parseFloat(market.reserve_token || "0");
+    const reserveNative = parseFloat(market.reserve_native || "0");
 
     if (reserveNative <= 0) return null;
 
@@ -172,8 +179,9 @@ export async function fetchSellQuote(tokenAddress: string, tokenAmount: string) 
     if (!market) return null;
 
     const amountIn = parseFloat(tokenAmount);
-    const reserveToken = parseFloat(market.reserveToken || market.virtualToken || "0");
-    const reserveNative = parseFloat(market.reserveNative || market.virtualNative || "0");
+    // Use reserve_token and reserve_native from API response
+    const reserveToken = parseFloat(market.reserve_token || "0");
+    const reserveNative = parseFloat(market.reserve_native || "0");
 
     if (reserveToken <= 0) return null;
 

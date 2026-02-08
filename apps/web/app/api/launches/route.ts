@@ -20,19 +20,14 @@ export async function GET() {
 
         if (launch.tokenAddress && launch.status !== "pending") {
           try {
-            // Fetch token info
-            const tokenRes = await fetch(`${NADFUN_API}/token/${launch.tokenAddress}`);
+            // Fetch token info - uses /agent/token/:token_id
+            const tokenRes = await fetch(`${NADFUN_API}/agent/token/${launch.tokenAddress}`);
             if (tokenRes.ok) {
-              const token = await tokenRes.json();
-              liveData.marketCap = token.marketCap
-                ? (parseFloat(token.marketCap) / 1e18).toFixed(2)
-                : "0";
-              liveData.progress = token.bondingCurve?.curveProgress
-                ? token.bondingCurve.curveProgress * 100
-                : 0;
+              const tokenData = await tokenRes.json();
+              const token = tokenData.token_info || tokenData;
 
               // Check if graduated
-              if (liveData.progress >= 100 && launch.status === "live") {
+              if (token.is_graduated && launch.status === "live") {
                 updateLaunch(launch.id, {
                   status: "graduated",
                   graduatedAt: Date.now(),
@@ -41,24 +36,32 @@ export async function GET() {
               }
             }
 
-            // Fetch holders
-            const holdersRes = await fetch(
-              `${NADFUN_API}/token/${launch.tokenAddress}/holder?limit=100`
-            );
-            if (holdersRes.ok) {
-              const holders = await holdersRes.json();
-              liveData.holders = holders.items?.length || 0;
-            }
-
-            // Fetch market data
+            // Fetch market data - uses /agent/market/:token_id (includes holder_count)
             const marketRes = await fetch(
-              `${NADFUN_API}/token/${launch.tokenAddress}/market`
+              `${NADFUN_API}/agent/market/${launch.tokenAddress}`
             );
             if (marketRes.ok) {
-              const market = await marketRes.json();
-              liveData.volume24h = market.volume24h
-                ? (parseFloat(market.volume24h) / 1e18).toFixed(2)
-                : "0";
+              const marketData = await marketRes.json();
+              const market = marketData.market_info || marketData;
+
+              // Market cap from price * total supply
+              if (market.price_usd && market.total_supply) {
+                const mcap = parseFloat(market.price_usd) * (parseFloat(market.total_supply) / 1e18);
+                liveData.marketCap = mcap.toFixed(2);
+              }
+
+              // Holder count included in market response
+              liveData.holders = market.holder_count || 0;
+
+              // Volume from market data
+              if (market.volume) {
+                liveData.volume24h = (parseFloat(market.volume) / 1e18).toFixed(2);
+              }
+
+              // Graduation progress - graduated tokens are at 100%
+              if (market.market_type === "DEX") {
+                liveData.progress = 100;
+              }
             }
           } catch (e) {
             console.error(`Failed to fetch data for ${launch.tokenAddress}:`, e);
