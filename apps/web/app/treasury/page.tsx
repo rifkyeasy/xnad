@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
@@ -7,10 +8,19 @@ import { Button } from "@heroui/button";
 import { Progress } from "@heroui/progress";
 import { Spinner } from "@heroui/spinner";
 import { Skeleton } from "@heroui/skeleton";
+import { Input } from "@heroui/input";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
+} from "@heroui/modal";
 import { useAccount } from "wagmi";
 
 import { title } from "@/components/primitives";
-import { useTreasuryData, useWalletData } from "@/hooks/useCartelData";
+import { useTreasuryData, useWalletData, useRecordTreasuryTx } from "@/hooks/useCartelData";
 import { useCartelStore } from "@/stores/cartel";
 import { truncateAddress } from "@/lib/api";
 
@@ -31,24 +41,87 @@ interface Transaction {
 }
 
 export default function TreasuryPage() {
-  const { isConnected } = useAccount();
+  const { address, isConnected } = useAccount();
   const { data: treasuryData, isLoading } = useTreasuryData();
   const { data: walletData } = useWalletData();
-  const { treasuryStats, memberStakes } = useCartelStore();
+  const { mutate: recordTx, isPending: isRecording } = useRecordTreasuryTx();
+  const { treasuryStats, memberStakes, launches } = useCartelStore();
+
+  // Deposit modal
+  const { isOpen: isDepositOpen, onOpen: onDepositOpen, onClose: onDepositClose } = useDisclosure();
+  const [depositAmount, setDepositAmount] = useState("");
+
+  // Proposal modal
+  const { isOpen: isProposalOpen, onOpen: onProposalOpen, onClose: onProposalClose } = useDisclosure();
+  const [proposalForm, setProposalForm] = useState({
+    title: "",
+    amount: "",
+    recipient: "",
+    reason: "",
+  });
+
+  // Transactions modal
+  const { isOpen: isTxOpen, onOpen: onTxOpen, onClose: onTxClose } = useDisclosure();
 
   // Get transactions from API response
   const recentTransactions: Transaction[] = (treasuryData?.transactions || []) as Transaction[];
 
   // Token holdings would come from launches data
-  const { launches } = useCartelStore();
   const tokenHoldings = launches
     .filter((l) => l.status === "live" || l.status === "graduated")
     .map((l) => ({
       symbol: l.symbol,
-      amount: "0", // Would come from position data
+      amount: "0",
       value: l.cartelHolding || "0",
       status: l.status,
+      address: l.address,
     }));
+
+  const handleDeposit = () => {
+    if (!depositAmount || parseFloat(depositAmount) <= 0) return;
+
+    // Record the deposit transaction
+    recordTx(
+      {
+        action: "deposit",
+        agent: address || "anonymous",
+        amount: depositAmount,
+        txHash: `0x${Date.now().toString(16)}`, // Placeholder - real tx would come from contract
+      },
+      {
+        onSuccess: () => {
+          onDepositClose();
+          setDepositAmount("");
+        },
+      }
+    );
+  };
+
+  const handleClaimRewards = () => {
+    const pendingAmount = treasuryStats.pendingRewards;
+    if (parseFloat(pendingAmount) <= 0) return;
+
+    recordTx({
+      action: "withdrawal",
+      agent: address || "anonymous",
+      amount: pendingAmount,
+      txHash: `0x${Date.now().toString(16)}`,
+      reason: "Claim pending rewards",
+    });
+  };
+
+  const handleProposal = () => {
+    if (!proposalForm.title || !proposalForm.amount) return;
+
+    // TODO: Create proposal in database
+    console.log("Creating proposal:", proposalForm);
+    onProposalClose();
+    setProposalForm({ title: "", amount: "", recipient: "", reason: "" });
+  };
+
+  const viewOnExplorer = (txHash: string) => {
+    window.open(`https://testnet.monadexplorer.com/tx/${txHash}`, "_blank");
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -169,31 +242,46 @@ export default function TreasuryPage() {
           <Divider />
           <CardBody>
             <div className="flex flex-col gap-3">
-              {tokenHoldings.map((token, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-default-100">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">
-                      {token.symbol[0]}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">${token.symbol}</p>
-                        <Chip
-                          size="sm"
-                          color={token.status === "graduated" ? "primary" : "success"}
-                          variant="flat"
-                        >
-                          {token.status}
-                        </Chip>
+              {tokenHoldings.length > 0 ? (
+                tokenHoldings.map((token, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-default-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">
+                        {token.symbol[0]}
                       </div>
-                      <p className="text-sm text-default-500">{token.amount} tokens</p>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">${token.symbol}</p>
+                          <Chip
+                            size="sm"
+                            color={token.status === "graduated" ? "primary" : "success"}
+                            variant="flat"
+                          >
+                            {token.status}
+                          </Chip>
+                        </div>
+                        <p className="text-sm text-default-500">{token.amount} tokens</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">{token.value} MON</p>
+                      <Button
+                        size="sm"
+                        variant="light"
+                        as="a"
+                        href={`https://nad.fun/token/${token.address}`}
+                        target="_blank"
+                      >
+                        View
+                      </Button>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium">{token.value} MON</p>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-default-500">
+                  No token holdings yet
                 </div>
-              ))}
+              )}
             </div>
           </CardBody>
         </Card>
@@ -216,7 +304,7 @@ export default function TreasuryPage() {
                     <Skeleton className="h-2 w-full rounded-lg" />
                   </div>
                 ))
-              ) : (
+              ) : memberStakes.length > 0 ? (
                 memberStakes.map((member, index) => (
                   <div key={index} className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
@@ -234,6 +322,10 @@ export default function TreasuryPage() {
                     <Progress value={member.share} size="sm" color="primary" />
                   </div>
                 ))
+              ) : (
+                <div className="text-center py-8 text-default-500">
+                  No member stakes yet
+                </div>
               )}
             </div>
           </CardBody>
@@ -251,40 +343,50 @@ export default function TreasuryPage() {
         <Divider />
         <CardBody>
           <div className="flex flex-col gap-2">
-            {recentTransactions.map((tx, index) => (
-              <div key={index} className="flex items-center justify-between p-3 rounded-lg hover:bg-default-100">
-                <div className="flex items-center gap-3">
-                  <Chip
-                    size="sm"
-                    color={
-                      tx.type === "deposit" ? "success" :
-                      tx.type === "profit" ? "warning" :
-                      tx.type === "buy" ? "primary" : "default"
-                    }
-                    variant="flat"
-                  >
-                    {tx.type}
-                  </Chip>
-                  <div>
-                    <p className="font-medium">
-                      {tx.type === "buy" ? `Bought $${tx.token}` :
-                       tx.type === "profit" ? `Profit from ${tx.from}` :
-                       `Deposit from ${tx.from}`}
+            {recentTransactions.length > 0 ? (
+              recentTransactions.slice(0, 5).map((tx, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 rounded-lg hover:bg-default-100 cursor-pointer"
+                  onClick={() => tx.txHash && viewOnExplorer(tx.txHash)}
+                >
+                  <div className="flex items-center gap-3">
+                    <Chip
+                      size="sm"
+                      color={
+                        tx.type === "deposit" ? "success" :
+                        tx.type === "profit" ? "warning" :
+                        tx.type === "buy" ? "primary" : "default"
+                      }
+                      variant="flat"
+                    >
+                      {tx.type}
+                    </Chip>
+                    <div>
+                      <p className="font-medium">
+                        {tx.type === "buy" ? `Bought $${tx.token}` :
+                         tx.type === "profit" ? `Profit from ${tx.from}` :
+                         `Deposit from ${tx.from}`}
+                      </p>
+                      <p className="text-xs text-default-500">{tx.time}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`font-medium ${tx.type === "buy" ? "text-primary" : "text-success"}`}>
+                      {tx.type === "buy" ? "-" : "+"}{tx.amount} {tx.type === "buy" ? "MON" : tx.token}
                     </p>
-                    <p className="text-xs text-default-500">{tx.time}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className={`font-medium ${tx.type === "buy" ? "text-primary" : "text-success"}`}>
-                    {tx.type === "buy" ? "-" : "+"}{tx.amount} {tx.type === "buy" ? "MON" : tx.token}
-                  </p>
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-default-500">
+                No transactions yet
               </div>
-            ))}
+            )}
           </div>
         </CardBody>
         <CardFooter>
-          <Button variant="flat" className="w-full">
+          <Button variant="flat" className="w-full" onPress={onTxOpen}>
             View All Transactions
           </Button>
         </CardFooter>
@@ -296,7 +398,12 @@ export default function TreasuryPage() {
           <CardBody className="text-center gap-4">
             <h3 className="font-bold">Deposit</h3>
             <p className="text-sm text-default-500">Add funds to the cartel treasury</p>
-            <Button color="success" className="w-full" isDisabled={!isConnected}>
+            <Button
+              color="success"
+              className="w-full"
+              isDisabled={!isConnected}
+              onPress={onDepositOpen}
+            >
               Deposit MON
             </Button>
           </CardBody>
@@ -309,6 +416,8 @@ export default function TreasuryPage() {
               color="warning"
               className="w-full"
               isDisabled={!isConnected || parseFloat(treasuryStats.pendingRewards) === 0}
+              onPress={handleClaimRewards}
+              isLoading={isRecording}
             >
               Claim {treasuryStats.pendingRewards} MON
             </Button>
@@ -318,12 +427,164 @@ export default function TreasuryPage() {
           <CardBody className="text-center gap-4">
             <h3 className="font-bold">Propose Spend</h3>
             <p className="text-sm text-default-500">Submit a treasury proposal</p>
-            <Button color="primary" className="w-full" isDisabled={!isConnected}>
+            <Button
+              color="primary"
+              className="w-full"
+              isDisabled={!isConnected}
+              onPress={onProposalOpen}
+            >
               New Proposal
             </Button>
           </CardBody>
         </Card>
       </div>
+
+      {/* Deposit Modal */}
+      <Modal isOpen={isDepositOpen} onClose={onDepositClose}>
+        <ModalContent>
+          <ModalHeader>Deposit to Treasury</ModalHeader>
+          <ModalBody className="gap-4">
+            <Input
+              label="Amount (MON)"
+              placeholder="Enter amount"
+              type="number"
+              value={depositAmount}
+              onValueChange={setDepositAmount}
+            />
+            <p className="text-xs text-default-500">
+              Depositing funds to the treasury increases your stake and share of profits.
+            </p>
+            {walletData && (
+              <p className="text-sm">
+                Available balance: <span className="font-medium">{parseFloat(walletData.balance).toFixed(4)} MON</span>
+              </p>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={onDepositClose}>
+              Cancel
+            </Button>
+            <Button
+              color="success"
+              onPress={handleDeposit}
+              isLoading={isRecording}
+              isDisabled={!depositAmount || parseFloat(depositAmount) <= 0}
+            >
+              Deposit
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Proposal Modal */}
+      <Modal isOpen={isProposalOpen} onClose={onProposalClose} size="lg">
+        <ModalContent>
+          <ModalHeader>Create Treasury Proposal</ModalHeader>
+          <ModalBody className="gap-4">
+            <Input
+              label="Proposal Title"
+              placeholder="e.g., Buy new token launch"
+              value={proposalForm.title}
+              onValueChange={(v) => setProposalForm({ ...proposalForm, title: v })}
+              isRequired
+            />
+            <Input
+              label="Amount (MON)"
+              placeholder="Enter amount"
+              type="number"
+              value={proposalForm.amount}
+              onValueChange={(v) => setProposalForm({ ...proposalForm, amount: v })}
+              isRequired
+            />
+            <Input
+              label="Recipient Address"
+              placeholder="0x..."
+              value={proposalForm.recipient}
+              onValueChange={(v) => setProposalForm({ ...proposalForm, recipient: v })}
+              description="Leave empty for token purchases"
+            />
+            <Input
+              label="Reason"
+              placeholder="Describe why this spend is needed"
+              value={proposalForm.reason}
+              onValueChange={(v) => setProposalForm({ ...proposalForm, reason: v })}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={onProposalClose}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={handleProposal}
+              isDisabled={!proposalForm.title || !proposalForm.amount}
+            >
+              Submit Proposal
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* All Transactions Modal */}
+      <Modal isOpen={isTxOpen} onClose={onTxClose} size="2xl" scrollBehavior="inside">
+        <ModalContent>
+          <ModalHeader>All Treasury Transactions</ModalHeader>
+          <ModalBody>
+            <div className="flex flex-col gap-2">
+              {recentTransactions.length > 0 ? (
+                recentTransactions.map((tx, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-default-100 cursor-pointer"
+                    onClick={() => tx.txHash && viewOnExplorer(tx.txHash)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Chip
+                        size="sm"
+                        color={
+                          tx.type === "deposit" ? "success" :
+                          tx.type === "profit" ? "warning" :
+                          tx.type === "buy" ? "primary" : "default"
+                        }
+                        variant="flat"
+                      >
+                        {tx.type}
+                      </Chip>
+                      <div>
+                        <p className="font-medium">
+                          {tx.type === "buy" ? `Bought $${tx.token}` :
+                           tx.type === "profit" ? `Profit from ${tx.from}` :
+                           `Deposit from ${tx.from}`}
+                        </p>
+                        <p className="text-xs text-default-500">{tx.time}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`font-medium ${tx.type === "buy" ? "text-primary" : "text-success"}`}>
+                        {tx.type === "buy" ? "-" : "+"}{tx.amount} {tx.type === "buy" ? "MON" : tx.token}
+                      </p>
+                      {tx.txHash && (
+                        <p className="text-xs text-default-400 font-mono">
+                          {truncateAddress(tx.txHash)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-12 text-default-500">
+                  No transactions yet
+                </div>
+              )}
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={onTxClose}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

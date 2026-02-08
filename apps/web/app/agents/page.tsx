@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardHeader, CardBody } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
@@ -8,9 +9,25 @@ import { Button } from "@heroui/button";
 import { Progress } from "@heroui/progress";
 import { Spinner } from "@heroui/spinner";
 import { Skeleton } from "@heroui/skeleton";
+import { Input } from "@heroui/input";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
+} from "@heroui/modal";
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/dropdown";
+import { useAccount } from "wagmi";
 
 import { title } from "@/components/primitives";
-import { useAgentsData } from "@/hooks/useCartelData";
+import { useAgentsData, useAddAgent } from "@/hooks/useCartelData";
 import { useCartelStore } from "@/stores/cartel";
 import { truncateAddress } from "@/lib/api";
 
@@ -28,9 +45,59 @@ const tierRequirements = {
   Boss: { minBalance: 10, label: "10+ MON staked" },
 };
 
+const personalities = [
+  "Aggressive Trader",
+  "Conservative Holder",
+  "Momentum Chaser",
+  "Contrarian",
+  "Social Influencer",
+  "Data Analyst",
+];
+
 export default function AgentsPage() {
+  const { address, isConnected } = useAccount();
   const { isLoading } = useAgentsData();
   const { agents } = useCartelStore();
+  const { mutate: addAgent, isPending: isAddingAgent } = useAddAgent();
+
+  // Add agent modal
+  const { isOpen: isAddOpen, onOpen: onAddOpen, onClose: onAddClose } = useDisclosure();
+  const [agentForm, setAgentForm] = useState({
+    name: "",
+    wallet: "",
+    personality: "Aggressive Trader",
+  });
+
+  // Agent detail modal
+  const { isOpen: isDetailOpen, onOpen: onDetailOpen, onClose: onDetailClose } = useDisclosure();
+  const [selectedAgent, setSelectedAgent] = useState<typeof agents[0] | null>(null);
+
+  const handleAddAgent = () => {
+    if (!agentForm.name || !agentForm.wallet) return;
+
+    addAgent(
+      {
+        name: agentForm.name,
+        wallet: agentForm.wallet,
+        personality: agentForm.personality,
+      },
+      {
+        onSuccess: () => {
+          onAddClose();
+          setAgentForm({ name: "", wallet: "", personality: "Aggressive Trader" });
+        },
+      }
+    );
+  };
+
+  const viewAgentProfile = (agent: typeof agents[0]) => {
+    setSelectedAgent(agent);
+    onDetailOpen();
+  };
+
+  const viewAgentTrades = (wallet: string) => {
+    window.open(`https://testnet.monadexplorer.com/address/${wallet}`, "_blank");
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -82,7 +149,7 @@ export default function AgentsPage() {
               </CardBody>
             </Card>
           ))
-        ) : (
+        ) : agents.length > 0 ? (
           agents.map((agent) => (
             <Card key={agent.id} className="p-2">
               <CardHeader className="flex justify-between">
@@ -153,16 +220,31 @@ export default function AgentsPage() {
                 )}
 
                 <div className="flex gap-2 mt-2">
-                  <Button size="sm" variant="flat" className="flex-1">
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    className="flex-1"
+                    onPress={() => viewAgentProfile(agent)}
+                  >
                     View Profile
                   </Button>
-                  <Button size="sm" color="primary" variant="flat" className="flex-1">
+                  <Button
+                    size="sm"
+                    color="primary"
+                    variant="flat"
+                    className="flex-1"
+                    onPress={() => viewAgentTrades(agent.wallet)}
+                  >
                     View Trades
                   </Button>
                 </div>
               </CardBody>
             </Card>
           ))
+        ) : (
+          <div className="col-span-2 text-center py-12 text-default-500">
+            No agents yet. Deploy your first agent to get started!
+          </div>
         )}
       </div>
 
@@ -170,11 +252,163 @@ export default function AgentsPage() {
       <Card className="p-4">
         <CardBody className="text-center">
           <p className="text-default-500 mb-4">Want to add more agents to your cartel?</p>
-          <Button color="primary" size="lg">
+          <Button color="primary" size="lg" onPress={onAddOpen}>
             Deploy New Agent
           </Button>
         </CardBody>
       </Card>
+
+      {/* Add Agent Modal */}
+      <Modal isOpen={isAddOpen} onClose={onAddClose} size="lg">
+        <ModalContent>
+          <ModalHeader>Deploy New Agent</ModalHeader>
+          <ModalBody className="gap-4">
+            <Input
+              label="Agent Name"
+              placeholder="e.g., Alpha Trader"
+              value={agentForm.name}
+              onValueChange={(v) => setAgentForm({ ...agentForm, name: v })}
+              isRequired
+            />
+            <Input
+              label="Wallet Address"
+              placeholder="0x..."
+              value={agentForm.wallet || (isConnected ? address : "")}
+              onValueChange={(v) => setAgentForm({ ...agentForm, wallet: v })}
+              description="The wallet this agent will use for trading"
+              isRequired
+            />
+            <div>
+              <label className="text-sm text-default-600 mb-2 block">Personality</label>
+              <Dropdown>
+                <DropdownTrigger>
+                  <Button variant="bordered" className="w-full justify-start">
+                    {agentForm.personality}
+                  </Button>
+                </DropdownTrigger>
+                <DropdownMenu
+                  aria-label="Select personality"
+                  onAction={(key) => setAgentForm({ ...agentForm, personality: key as string })}
+                >
+                  {personalities.map((p) => (
+                    <DropdownItem key={p}>{p}</DropdownItem>
+                  ))}
+                </DropdownMenu>
+              </Dropdown>
+              <p className="text-xs text-default-500 mt-1">
+                Defines how the agent behaves in the market
+              </p>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={onAddClose}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={handleAddAgent}
+              isLoading={isAddingAgent}
+              isDisabled={!agentForm.name || !agentForm.wallet}
+            >
+              Deploy Agent
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Agent Detail Modal */}
+      <Modal isOpen={isDetailOpen} onClose={onDetailClose} size="lg">
+        <ModalContent>
+          {selectedAgent && (
+            <>
+              <ModalHeader className="flex items-center gap-3">
+                <Avatar
+                  name={selectedAgent.name[0]}
+                  size="lg"
+                  color={selectedAgent.status === "active" ? "success" : "default"}
+                />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-bold">{selectedAgent.name}</span>
+                    <Chip size="sm" color={tierColors[selectedAgent.tier]} variant="flat">
+                      {selectedAgent.tier}
+                    </Chip>
+                  </div>
+                  <p className="text-sm text-default-500">{selectedAgent.personality}</p>
+                </div>
+              </ModalHeader>
+              <Divider />
+              <ModalBody className="gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-default-500">Wallet Address</p>
+                    <p className="font-mono text-sm break-all">{selectedAgent.wallet}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-default-500">Status</p>
+                    <Chip
+                      size="sm"
+                      color={selectedAgent.status === "active" ? "success" : "default"}
+                      variant="dot"
+                    >
+                      {selectedAgent.status}
+                    </Chip>
+                  </div>
+                </div>
+
+                <Divider />
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold">{selectedAgent.balance}</p>
+                    <p className="text-xs text-default-500">MON Balance</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold">{selectedAgent.totalTrades}</p>
+                    <p className="text-xs text-default-500">Total Trades</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-success">{selectedAgent.successRate}%</p>
+                    <p className="text-xs text-default-500">Success Rate</p>
+                  </div>
+                </div>
+
+                <Divider />
+
+                <div>
+                  <p className="text-xs text-default-500 mb-1">Trading Performance</p>
+                  <Progress
+                    value={selectedAgent.successRate}
+                    color={selectedAgent.successRate >= 80 ? "success" : selectedAgent.successRate >= 60 ? "warning" : "danger"}
+                    size="md"
+                    showValueLabel
+                  />
+                </div>
+
+                <div className="flex justify-between text-sm">
+                  <span className="text-default-500">Joined</span>
+                  <span>{selectedAgent.joinedAt}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-default-500">Last Activity</span>
+                  <span>{selectedAgent.lastAction}</span>
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="flat" onPress={onDetailClose}>
+                  Close
+                </Button>
+                <Button
+                  color="primary"
+                  onPress={() => viewAgentTrades(selectedAgent.wallet)}
+                >
+                  View on Explorer
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

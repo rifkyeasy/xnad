@@ -9,7 +9,8 @@ import { Progress } from "@heroui/progress";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Spinner } from "@heroui/spinner";
 import { Skeleton } from "@heroui/skeleton";
-import { Input } from "@heroui/input" ;
+import { Input } from "@heroui/input";
+import { Textarea } from "@heroui/input";
 import {
   Modal,
   ModalContent,
@@ -18,21 +19,43 @@ import {
   ModalFooter,
   useDisclosure,
 } from "@heroui/modal";
+import { useAccount } from "wagmi";
 
 import { title } from "@/components/primitives";
-import { useTokenLaunches, useCartelStats, useBuyToken, useSellToken } from "@/hooks/useCartelData";
+import {
+  useTokenLaunches,
+  useCartelStats,
+  useBuyToken,
+  useSellToken,
+  useProposeLaunch,
+  useVoteLaunch,
+} from "@/hooks/useCartelData";
 import { useCartelStore } from "@/stores/cartel";
 
 export default function LaunchesPage() {
+  const { address, isConnected } = useAccount();
   const { isLoading: launchesLoading } = useTokenLaunches();
   const { isLoading: statsLoading } = useCartelStats();
-  const { launches, stats } = useCartelStore();
+  const { launches, stats, agents } = useCartelStore();
   const { buyToken, isPending: isBuying } = useBuyToken();
   const { sellToken, isPending: isSelling } = useSellToken();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { mutate: proposeLaunch, isPending: isProposing } = useProposeLaunch();
+  const { mutate: voteLaunch, isPending: isVoting } = useVoteLaunch();
+
+  // Trade modal
+  const { isOpen: isTradeOpen, onOpen: onTradeOpen, onClose: onTradeClose } = useDisclosure();
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [tradeAmount, setTradeAmount] = useState("");
   const [tradeType, setTradeType] = useState<"buy" | "sell">("buy");
+
+  // Propose modal
+  const { isOpen: isProposeOpen, onOpen: onProposeOpen, onClose: onProposeClose } = useDisclosure();
+  const [proposeForm, setProposeForm] = useState({
+    symbol: "",
+    name: "",
+    tokenAddress: "",
+    investmentAmount: "1",
+  });
 
   const activeLaunches = launches.filter((l) => l.status === "live");
   const graduatedTokens = launches.filter((l) => l.status === "graduated");
@@ -47,7 +70,7 @@ export default function LaunchesPage() {
       } else {
         await sellToken(selectedToken, tradeAmount);
       }
-      onClose();
+      onTradeClose();
       setTradeAmount("");
     } catch (error) {
       console.error("Trade error:", error);
@@ -57,7 +80,33 @@ export default function LaunchesPage() {
   const openTradeModal = (tokenAddress: string, type: "buy" | "sell") => {
     setSelectedToken(tokenAddress);
     setTradeType(type);
-    onOpen();
+    onTradeOpen();
+  };
+
+  const handlePropose = () => {
+    if (!proposeForm.symbol || !proposeForm.name) return;
+
+    proposeLaunch(
+      {
+        symbol: proposeForm.symbol.toUpperCase(),
+        name: proposeForm.name,
+        tokenAddress: proposeForm.tokenAddress || undefined,
+        proposedBy: address || "Anonymous",
+        investmentAmount: proposeForm.investmentAmount,
+      },
+      {
+        onSuccess: () => {
+          onProposeClose();
+          setProposeForm({ symbol: "", name: "", tokenAddress: "", investmentAmount: "1" });
+        },
+      }
+    );
+  };
+
+  const handleVote = (launchId: string, vote: "yes" | "no") => {
+    // Use first agent or connected wallet as voter
+    const voterId = agents[0]?.id || address || "anonymous";
+    voteLaunch({ launchId, agentId: voterId, vote });
   };
 
   const isLoading = launchesLoading || statsLoading;
@@ -274,6 +323,17 @@ export default function LaunchesPage() {
                       </div>
                     )}
                   </CardBody>
+                  <CardFooter>
+                    <Button
+                      variant="flat"
+                      className="w-full"
+                      as="a"
+                      href={`https://nad.fun/token/${token.address}`}
+                      target="_blank"
+                    >
+                      View on nad.fun
+                    </Button>
+                  </CardFooter>
                 </Card>
               ))
             ) : (
@@ -321,14 +381,28 @@ export default function LaunchesPage() {
                             <p className="text-xs text-default-500">No</p>
                           </div>
                         </div>
+                        <div className="text-right text-sm text-default-500">
+                          {token.votes.yes + token.votes.no} total votes
+                        </div>
                       </div>
                     )}
                   </CardBody>
                   <CardFooter className="gap-2">
-                    <Button color="success" className="flex-1">
+                    <Button
+                      color="success"
+                      className="flex-1"
+                      onPress={() => handleVote(token.id, "yes")}
+                      isLoading={isVoting}
+                    >
                       Vote Yes
                     </Button>
-                    <Button color="danger" variant="flat" className="flex-1">
+                    <Button
+                      color="danger"
+                      variant="flat"
+                      className="flex-1"
+                      onPress={() => handleVote(token.id, "no")}
+                      isLoading={isVoting}
+                    >
                       Vote No
                     </Button>
                   </CardFooter>
@@ -347,14 +421,14 @@ export default function LaunchesPage() {
       <Card className="p-4">
         <CardBody className="text-center">
           <p className="text-default-500 mb-4">Have a token idea? Propose a new launch for cartel voting.</p>
-          <Button color="primary" size="lg">
+          <Button color="primary" size="lg" onPress={onProposeOpen}>
             Propose New Launch
           </Button>
         </CardBody>
       </Card>
 
       {/* Trade Modal */}
-      <Modal isOpen={isOpen} onClose={onClose}>
+      <Modal isOpen={isTradeOpen} onClose={onTradeClose}>
         <ModalContent>
           <ModalHeader>
             {tradeType === "buy" ? "Buy Token" : "Sell Token"}
@@ -367,17 +441,74 @@ export default function LaunchesPage() {
               value={tradeAmount}
               onValueChange={setTradeAmount}
             />
+            <p className="text-xs text-default-500 mt-2">
+              {tradeType === "buy"
+                ? "Enter the amount of MON you want to spend"
+                : "Enter the amount of tokens you want to sell"}
+            </p>
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={onClose}>
+            <Button variant="flat" onPress={onTradeClose}>
               Cancel
             </Button>
             <Button
               color={tradeType === "buy" ? "success" : "danger"}
               onPress={handleTrade}
               isLoading={isBuying || isSelling}
+              isDisabled={!tradeAmount || parseFloat(tradeAmount) <= 0}
             >
               {tradeType === "buy" ? "Buy" : "Sell"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Propose Launch Modal */}
+      <Modal isOpen={isProposeOpen} onClose={onProposeClose} size="lg">
+        <ModalContent>
+          <ModalHeader>Propose New Token Launch</ModalHeader>
+          <ModalBody className="gap-4">
+            <Input
+              label="Token Symbol"
+              placeholder="e.g., CARTEL"
+              value={proposeForm.symbol}
+              onValueChange={(v) => setProposeForm({ ...proposeForm, symbol: v })}
+              isRequired
+            />
+            <Input
+              label="Token Name"
+              placeholder="e.g., Cartel Token"
+              value={proposeForm.name}
+              onValueChange={(v) => setProposeForm({ ...proposeForm, name: v })}
+              isRequired
+            />
+            <Input
+              label="Token Address (optional)"
+              placeholder="0x... (leave empty to create new)"
+              value={proposeForm.tokenAddress}
+              onValueChange={(v) => setProposeForm({ ...proposeForm, tokenAddress: v })}
+              description="If you already deployed a token on nad.fun, paste its address"
+            />
+            <Input
+              label="Initial Investment (MON)"
+              placeholder="1"
+              type="number"
+              value={proposeForm.investmentAmount}
+              onValueChange={(v) => setProposeForm({ ...proposeForm, investmentAmount: v })}
+              description="Suggested initial investment from treasury"
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={onProposeClose}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={handlePropose}
+              isLoading={isProposing}
+              isDisabled={!proposeForm.symbol || !proposeForm.name}
+            >
+              Submit Proposal
             </Button>
           </ModalFooter>
         </ModalContent>
