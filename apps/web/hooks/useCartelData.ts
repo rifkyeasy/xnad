@@ -10,13 +10,21 @@ import type { Agent, TokenLaunch, Activity, CartelStats, TreasuryStats, MemberSt
 // API base URL
 const API_BASE = "/api";
 
+// Extended cartel data type including config
+interface CartelData extends CartelStats {
+  initialized: boolean;
+  treasuryWallet?: string;
+  cartelId?: string;
+  createdAt?: number;
+}
+
 // Hook for cartel initialization status and stats
 export function useCartelStats() {
   const { setStats } = useCartelStore();
 
   return useQuery({
     queryKey: ["cartel-stats"],
-    queryFn: async (): Promise<CartelStats & { initialized: boolean }> => {
+    queryFn: async (): Promise<CartelData> => {
       const res = await fetch(`${API_BASE}/cartel`);
       if (!res.ok) throw new Error("Failed to fetch cartel stats");
       const data = await res.json();
@@ -41,7 +49,13 @@ export function useCartelStats() {
       };
 
       setStats(stats);
-      return { ...stats, initialized: true };
+      return {
+        ...stats,
+        initialized: true,
+        treasuryWallet: data.treasuryWallet,
+        cartelId: data.cartelId,
+        createdAt: data.createdAt,
+      };
     },
     refetchInterval: 15000,
     staleTime: 5000,

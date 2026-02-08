@@ -10,7 +10,6 @@ import { Tabs, Tab } from "@heroui/tabs";
 import { Spinner } from "@heroui/spinner";
 import { Skeleton } from "@heroui/skeleton";
 import { Input } from "@heroui/input";
-import { Textarea } from "@heroui/input";
 import {
   Modal,
   ModalContent,
@@ -25,20 +24,25 @@ import { title } from "@/components/primitives";
 import {
   useTokenLaunches,
   useCartelStats,
-  useBuyToken,
-  useSellToken,
   useProposeLaunch,
   useVoteLaunch,
 } from "@/hooks/useCartelData";
 import { useCartelStore } from "@/stores/cartel";
+import {
+  useBuyToken,
+  useSellToken,
+  useBuyQuote,
+  useSellQuote,
+  useTokenBalance,
+} from "@/hooks/useTrading";
 
 export default function LaunchesPage() {
   const { address, isConnected } = useAccount();
   const { isLoading: launchesLoading } = useTokenLaunches();
   const { isLoading: statsLoading } = useCartelStats();
   const { launches, stats, agents } = useCartelStore();
-  const { buyToken, isPending: isBuying } = useBuyToken();
-  const { sellToken, isPending: isSelling } = useSellToken();
+  const { buyToken, isPending: isBuying, error: buyError } = useBuyToken();
+  const { sellToken, isPending: isSelling, error: sellError } = useSellToken();
   const { mutate: proposeLaunch, isPending: isProposing } = useProposeLaunch();
   const { mutate: voteLaunch, isPending: isVoting } = useVoteLaunch();
 
@@ -47,6 +51,20 @@ export default function LaunchesPage() {
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [tradeAmount, setTradeAmount] = useState("");
   const [tradeType, setTradeType] = useState<"buy" | "sell">("buy");
+  const [slippage, setSlippage] = useState("1");
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [tradeError, setTradeError] = useState<string | null>(null);
+
+  // Get quote for selected token
+  const { amountOut: buyQuote, isLoading: buyQuoteLoading } = useBuyQuote(
+    selectedToken || "",
+    tradeType === "buy" ? tradeAmount : "0"
+  );
+  const { amountOut: sellQuote, isLoading: sellQuoteLoading } = useSellQuote(
+    selectedToken || "",
+    tradeType === "sell" ? tradeAmount : "0"
+  );
+  const { balance: tokenBalance } = useTokenBalance(selectedToken || "");
 
   // Propose modal
   const { isOpen: isProposeOpen, onOpen: onProposeOpen, onClose: onProposeClose } = useDisclosure();
@@ -62,25 +80,41 @@ export default function LaunchesPage() {
   const pendingLaunches = launches.filter((l) => l.status === "pending");
 
   const handleTrade = async () => {
-    if (!selectedToken || !tradeAmount) return;
+    if (!selectedToken || !tradeAmount || !isConnected) return;
+
+    setTradeError(null);
+    setTxHash(null);
 
     try {
+      const slippagePercent = parseFloat(slippage) || 1;
+
       if (tradeType === "buy") {
-        await buyToken(selectedToken, tradeAmount);
+        const result = await buyToken(selectedToken, tradeAmount, slippagePercent);
+        setTxHash(result.hash);
       } else {
-        await sellToken(selectedToken, tradeAmount);
+        const result = await sellToken(selectedToken, tradeAmount, slippagePercent);
+        setTxHash(result.hash);
       }
-      onTradeClose();
-      setTradeAmount("");
     } catch (error) {
       console.error("Trade error:", error);
+      setTradeError(error instanceof Error ? error.message : "Transaction failed");
     }
   };
 
   const openTradeModal = (tokenAddress: string, type: "buy" | "sell") => {
     setSelectedToken(tokenAddress);
     setTradeType(type);
+    setTradeAmount("");
+    setTxHash(null);
+    setTradeError(null);
     onTradeOpen();
+  };
+
+  const closeTradeModal = () => {
+    onTradeClose();
+    setTradeAmount("");
+    setTxHash(null);
+    setTradeError(null);
   };
 
   const handlePropose = () => {
@@ -428,37 +462,108 @@ export default function LaunchesPage() {
       </Card>
 
       {/* Trade Modal */}
-      <Modal isOpen={isTradeOpen} onClose={onTradeClose}>
+      <Modal isOpen={isTradeOpen} onClose={closeTradeModal} size="lg">
         <ModalContent>
           <ModalHeader>
             {tradeType === "buy" ? "Buy Token" : "Sell Token"}
           </ModalHeader>
-          <ModalBody>
-            <Input
-              label={tradeType === "buy" ? "Amount (MON)" : "Amount (tokens)"}
-              placeholder="Enter amount"
-              type="number"
-              value={tradeAmount}
-              onValueChange={setTradeAmount}
-            />
-            <p className="text-xs text-default-500 mt-2">
-              {tradeType === "buy"
-                ? "Enter the amount of MON you want to spend"
-                : "Enter the amount of tokens you want to sell"}
-            </p>
+          <ModalBody className="gap-4">
+            {!isConnected && (
+              <div className="p-3 bg-warning-100 text-warning-700 rounded-lg text-sm">
+                Please connect your wallet to trade
+              </div>
+            )}
+
+            {txHash ? (
+              <div className="text-center py-4">
+                <Chip color="success" size="lg" className="mb-4">Transaction Submitted</Chip>
+                <p className="text-sm text-default-500 break-all">
+                  TX: {txHash}
+                </p>
+                <Button
+                  as="a"
+                  href={`https://testnet.monadexplorer.com/tx/${txHash}`}
+                  target="_blank"
+                  variant="flat"
+                  className="mt-4"
+                >
+                  View on Explorer
+                </Button>
+              </div>
+            ) : (
+              <>
+                {tradeType === "sell" && tokenBalance !== "0" && (
+                  <div className="p-3 bg-default-100 rounded-lg">
+                    <p className="text-sm text-default-500">Your Balance</p>
+                    <p className="font-medium">{parseFloat(tokenBalance).toFixed(4)} tokens</p>
+                  </div>
+                )}
+
+                <Input
+                  label={tradeType === "buy" ? "Amount (MON)" : "Amount (tokens)"}
+                  placeholder="Enter amount"
+                  type="number"
+                  value={tradeAmount}
+                  onValueChange={setTradeAmount}
+                  endContent={
+                    tradeType === "sell" && tokenBalance !== "0" && (
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        onPress={() => setTradeAmount(tokenBalance)}
+                      >
+                        MAX
+                      </Button>
+                    )
+                  }
+                />
+
+                {tradeAmount && parseFloat(tradeAmount) > 0 && (
+                  <div className="p-3 bg-default-100 rounded-lg">
+                    <p className="text-sm text-default-500">Estimated Output</p>
+                    {(buyQuoteLoading || sellQuoteLoading) ? (
+                      <Skeleton className="h-5 w-24 rounded-lg mt-1" />
+                    ) : (
+                      <p className="font-medium">
+                        {tradeType === "buy"
+                          ? `${parseFloat(buyQuote).toFixed(4)} tokens`
+                          : `${parseFloat(sellQuote).toFixed(4)} MON`}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <Input
+                  label="Slippage Tolerance (%)"
+                  placeholder="1"
+                  type="number"
+                  value={slippage}
+                  onValueChange={setSlippage}
+                  description="Transaction will revert if price changes more than this %"
+                />
+
+                {tradeError && (
+                  <div className="p-3 bg-danger-100 text-danger-700 rounded-lg text-sm">
+                    {tradeError}
+                  </div>
+                )}
+              </>
+            )}
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={onTradeClose}>
-              Cancel
+            <Button variant="flat" onPress={closeTradeModal}>
+              {txHash ? "Close" : "Cancel"}
             </Button>
-            <Button
-              color={tradeType === "buy" ? "success" : "danger"}
-              onPress={handleTrade}
-              isLoading={isBuying || isSelling}
-              isDisabled={!tradeAmount || parseFloat(tradeAmount) <= 0}
-            >
-              {tradeType === "buy" ? "Buy" : "Sell"}
-            </Button>
+            {!txHash && (
+              <Button
+                color={tradeType === "buy" ? "success" : "danger"}
+                onPress={handleTrade}
+                isLoading={isBuying || isSelling}
+                isDisabled={!tradeAmount || parseFloat(tradeAmount) <= 0 || !isConnected}
+              >
+                {tradeType === "buy" ? "Buy" : "Sell"}
+              </Button>
+            )}
           </ModalFooter>
         </ModalContent>
       </Modal>

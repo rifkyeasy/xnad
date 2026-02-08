@@ -17,10 +17,11 @@ import {
   ModalFooter,
   useDisclosure,
 } from "@heroui/modal";
-import { useAccount } from "wagmi";
+import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
+import { parseEther, type Address } from "viem";
 
 import { title } from "@/components/primitives";
-import { useTreasuryData, useWalletData, useRecordTreasuryTx } from "@/hooks/useCartelData";
+import { useTreasuryData, useWalletData, useRecordTreasuryTx, useCartelStats } from "@/hooks/useCartelData";
 import { useCartelStore } from "@/stores/cartel";
 import { truncateAddress } from "@/lib/api";
 
@@ -43,13 +44,25 @@ interface Transaction {
 export default function TreasuryPage() {
   const { address, isConnected } = useAccount();
   const { data: treasuryData, isLoading } = useTreasuryData();
+  const { data: cartelData } = useCartelStats();
   const { data: walletData } = useWalletData();
   const { mutate: recordTx, isPending: isRecording } = useRecordTreasuryTx();
   const { treasuryStats, memberStakes, launches } = useCartelStore();
 
+  // On-chain transaction
+  const { sendTransactionAsync, isPending: isSending } = useSendTransaction();
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [txError, setTxError] = useState<string | null>(null);
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash: txHash as `0x${string}` | undefined,
+  });
+
   // Deposit modal
   const { isOpen: isDepositOpen, onOpen: onDepositOpen, onClose: onDepositClose } = useDisclosure();
   const [depositAmount, setDepositAmount] = useState("");
+
+  // Get treasury wallet address
+  const treasuryWallet = cartelData?.treasuryWallet;
 
   // Proposal modal
   const { isOpen: isProposalOpen, onOpen: onProposalOpen, onClose: onProposalClose } = useDisclosure();
@@ -77,24 +90,39 @@ export default function TreasuryPage() {
       address: l.address,
     }));
 
-  const handleDeposit = () => {
-    if (!depositAmount || parseFloat(depositAmount) <= 0) return;
+  const handleDeposit = async () => {
+    if (!depositAmount || parseFloat(depositAmount) <= 0 || !treasuryWallet) return;
 
-    // Record the deposit transaction
-    recordTx(
-      {
+    setTxError(null);
+    setTxHash(null);
+
+    try {
+      // Send actual MON to treasury wallet on-chain
+      const hash = await sendTransactionAsync({
+        to: treasuryWallet as Address,
+        value: parseEther(depositAmount),
+      });
+
+      setTxHash(hash);
+
+      // Record in database for tracking
+      recordTx({
         action: "deposit",
         agent: address || "anonymous",
         amount: depositAmount,
-        txHash: `0x${Date.now().toString(16)}`, // Placeholder - real tx would come from contract
-      },
-      {
-        onSuccess: () => {
-          onDepositClose();
-          setDepositAmount("");
-        },
-      }
-    );
+        txHash: hash,
+      });
+    } catch (error) {
+      console.error("Deposit error:", error);
+      setTxError(error instanceof Error ? error.message : "Transaction failed");
+    }
+  };
+
+  const closeDepositModal = () => {
+    onDepositClose();
+    setDepositAmount("");
+    setTxHash(null);
+    setTxError(null);
   };
 
   const handleClaimRewards = () => {
@@ -440,38 +468,92 @@ export default function TreasuryPage() {
       </div>
 
       {/* Deposit Modal */}
-      <Modal isOpen={isDepositOpen} onClose={onDepositClose}>
+      <Modal isOpen={isDepositOpen} onClose={closeDepositModal} size="lg">
         <ModalContent>
           <ModalHeader>Deposit to Treasury</ModalHeader>
           <ModalBody className="gap-4">
-            <Input
-              label="Amount (MON)"
-              placeholder="Enter amount"
-              type="number"
-              value={depositAmount}
-              onValueChange={setDepositAmount}
-            />
-            <p className="text-xs text-default-500">
-              Depositing funds to the treasury increases your stake and share of profits.
-            </p>
-            {walletData && (
-              <p className="text-sm">
-                Available balance: <span className="font-medium">{parseFloat(walletData.balance).toFixed(4)} MON</span>
-              </p>
+            {!treasuryWallet && (
+              <div className="p-3 bg-warning-100 text-warning-700 rounded-lg text-sm">
+                Treasury wallet not configured. Please initialize the cartel first.
+              </div>
+            )}
+
+            {txHash ? (
+              <div className="text-center py-4">
+                <Chip color={isConfirmed ? "success" : "warning"} size="lg" className="mb-4">
+                  {isConfirming ? "Confirming..." : isConfirmed ? "Deposit Successful!" : "Transaction Submitted"}
+                </Chip>
+                <p className="font-medium text-lg mb-2">{depositAmount} MON</p>
+                <p className="text-sm text-default-500 break-all">TX: {txHash}</p>
+                <Button
+                  as="a"
+                  href={`https://testnet.monadexplorer.com/tx/${txHash}`}
+                  target="_blank"
+                  variant="flat"
+                  className="mt-4"
+                >
+                  View on Explorer
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="p-3 bg-default-100 rounded-lg">
+                  <p className="text-sm text-default-500">Treasury Wallet</p>
+                  <p className="font-mono text-sm break-all">{treasuryWallet || "Not set"}</p>
+                </div>
+
+                <Input
+                  label="Amount (MON)"
+                  placeholder="Enter amount"
+                  type="number"
+                  value={depositAmount}
+                  onValueChange={setDepositAmount}
+                  endContent={
+                    walletData && (
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        onPress={() => setDepositAmount(walletData.balance)}
+                      >
+                        MAX
+                      </Button>
+                    )
+                  }
+                />
+
+                <p className="text-xs text-default-500">
+                  Depositing funds to the treasury increases your stake and share of profits.
+                  This will send real MON to the treasury wallet on Monad testnet.
+                </p>
+
+                {walletData && (
+                  <p className="text-sm">
+                    Available balance: <span className="font-medium">{parseFloat(walletData.balance).toFixed(4)} MON</span>
+                  </p>
+                )}
+
+                {txError && (
+                  <div className="p-3 bg-danger-100 text-danger-700 rounded-lg text-sm">
+                    {txError}
+                  </div>
+                )}
+              </>
             )}
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={onDepositClose}>
-              Cancel
+            <Button variant="flat" onPress={closeDepositModal}>
+              {txHash ? "Close" : "Cancel"}
             </Button>
-            <Button
-              color="success"
-              onPress={handleDeposit}
-              isLoading={isRecording}
-              isDisabled={!depositAmount || parseFloat(depositAmount) <= 0}
-            >
-              Deposit
-            </Button>
+            {!txHash && (
+              <Button
+                color="success"
+                onPress={handleDeposit}
+                isLoading={isSending || isRecording}
+                isDisabled={!depositAmount || parseFloat(depositAmount) <= 0 || !treasuryWallet}
+              >
+                Deposit
+              </Button>
+            )}
           </ModalFooter>
         </ModalContent>
       </Modal>
