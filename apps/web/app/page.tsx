@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
 import { Progress } from "@heroui/progress";
 import { Chip } from "@heroui/chip";
@@ -8,6 +9,8 @@ import { Avatar } from "@heroui/avatar";
 import { Button } from "@heroui/button";
 import { Spinner } from "@heroui/spinner";
 import { Skeleton } from "@heroui/skeleton";
+import { Input } from "@heroui/input";
+import { useAccount } from "wagmi";
 
 import { title } from "@/components/primitives";
 import {
@@ -15,6 +18,7 @@ import {
   useTokenLaunches,
   useActivityFeed,
   useAgentsData,
+  useInitializeCartel,
 } from "@/hooks/useCartelData";
 import { useCartelStore } from "@/stores/cartel";
 import { truncateAddress } from "@/lib/api";
@@ -34,16 +38,59 @@ const actionColors: Record<string, "success" | "primary" | "warning" | "secondar
 };
 
 export default function Dashboard() {
+  const { address, isConnected } = useAccount();
+  const [treasuryWallet, setTreasuryWallet] = useState("");
+
   // Fetch live data
-  const { isLoading: statsLoading } = useCartelStats();
+  const { data: cartelData, isLoading: statsLoading } = useCartelStats();
   const { isLoading: launchesLoading } = useTokenLaunches();
   const { isLoading: activityLoading } = useActivityFeed();
   const { isLoading: agentsLoading } = useAgentsData();
+  const { mutate: initCartel, isPending: isInitializing } = useInitializeCartel();
 
   // Get data from store
   const { stats, currentLaunch, activities, agents } = useCartelStore();
 
   const isLoading = statsLoading || launchesLoading || activityLoading || agentsLoading;
+  const isInitialized = cartelData?.initialized;
+
+  // Show initialization UI if cartel not set up
+  if (!statsLoading && !isInitialized) {
+    return (
+      <div className="flex flex-col gap-6 items-center justify-center min-h-[60vh]">
+        <h1 className={title()}>Initialize Agent Cartel</h1>
+        <p className="text-default-500 text-center max-w-md">
+          Set up your cartel by providing a treasury wallet address. This wallet will hold shared funds.
+        </p>
+        <Card className="w-full max-w-md p-4">
+          <CardBody className="gap-4">
+            <Input
+              label="Treasury Wallet Address"
+              placeholder="0x..."
+              value={treasuryWallet || (isConnected ? address : "")}
+              onValueChange={setTreasuryWallet}
+              description="The wallet that will manage cartel funds"
+            />
+            <Button
+              color="primary"
+              size="lg"
+              className="w-full"
+              isLoading={isInitializing}
+              onPress={() => initCartel(treasuryWallet || address || "")}
+              isDisabled={!treasuryWallet && !address}
+            >
+              Initialize Cartel
+            </Button>
+            {!isConnected && (
+              <p className="text-xs text-warning text-center">
+                Connect wallet to use your address as treasury
+              </p>
+            )}
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">

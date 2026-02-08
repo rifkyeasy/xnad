@@ -1,159 +1,378 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAccount, useBalance, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { parseEther, formatEther } from "viem";
+import { useAccount, useBalance } from "wagmi";
+import { formatEther } from "viem";
 import { useCartelStore } from "@/stores/cartel";
 import * as api from "@/lib/api";
 import type { Agent, TokenLaunch, Activity, CartelStats, TreasuryStats, MemberStake } from "@/stores/cartel";
 
-// Cartel contract address (would be deployed)
-const CARTEL_TREASURY = "0x0000000000000000000000000000000000000000" as const;
+// API base URL
+const API_BASE = "/api";
 
-// Hook for fetching cartel stats
+// Hook for cartel initialization status and stats
 export function useCartelStats() {
   const { setStats } = useCartelStore();
 
   return useQuery({
     queryKey: ["cartel-stats"],
-    queryFn: async (): Promise<CartelStats> => {
-      // Fetch from multiple sources and aggregate
-      const tokens = await api.fetchTokensByCreationTime(100);
+    queryFn: async (): Promise<CartelStats & { initialized: boolean }> => {
+      const res = await fetch(`${API_BASE}/cartel`);
+      if (!res.ok) throw new Error("Failed to fetch cartel stats");
+      const data = await res.json();
 
-      // Count "cartel" tokens (in real app, filter by creator wallet)
-      const cartelTokens = tokens.items || [];
-      const graduated = cartelTokens.filter(
-        (t: { status?: string }) => t.status === "graduated"
-      ).length;
-      const live = cartelTokens.filter(
-        (t: { status?: string }) => t.status === "live" || !t.status
-      ).length;
+      if (!data.initialized) {
+        return {
+          initialized: false,
+          members: 0,
+          treasury: "0",
+          tokensGraduated: 0,
+          totalProfit: "0",
+          activeLaunches: 0,
+        };
+      }
 
       const stats: CartelStats = {
-        members: 5, // Would come from smart contract
-        treasury: "42.5", // Would come from smart contract
-        tokensGraduated: graduated || 3,
-        totalProfit: "156.8", // Would come from smart contract
-        activeLaunches: live || 2,
+        members: data.stats.members,
+        treasury: data.stats.treasury,
+        tokensGraduated: data.stats.tokensGraduated,
+        totalProfit: data.stats.totalProfit,
+        activeLaunches: data.stats.activeLaunches,
       };
 
       setStats(stats);
-      return stats;
+      return { ...stats, initialized: true };
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 15000,
+    staleTime: 5000,
+  });
+}
+
+// Hook for initializing cartel
+export function useInitializeCartel() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (treasuryWallet: string) => {
+      const res = await fetch(`${API_BASE}/cartel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ treasuryWallet }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to initialize cartel");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cartel-stats"] });
+    },
+  });
+}
+
+// Hook for fetching agents from API
+export function useAgentsData() {
+  const { setAgents } = useCartelStore();
+
+  return useQuery({
+    queryKey: ["agents-data"],
+    queryFn: async (): Promise<Agent[]> => {
+      const res = await fetch(`${API_BASE}/agents`);
+      if (!res.ok) throw new Error("Failed to fetch agents");
+      const data = await res.json();
+
+      const agents: Agent[] = data.agents.map((a: {
+        id: string;
+        name: string;
+        wallet: string;
+        tier: string;
+        personality: string;
+        status: string;
+        balance: string;
+        totalTrades: number;
+        successRate: number;
+        joinedAt: string;
+        lastActiveAt: string;
+      }) => ({
+        id: a.id,
+        name: a.name,
+        wallet: a.wallet,
+        tier: a.tier as Agent["tier"],
+        personality: a.personality,
+        status: a.status as Agent["status"],
+        balance: parseFloat(a.balance).toFixed(4),
+        totalTrades: a.totalTrades,
+        successRate: a.successRate,
+        joinedAt: a.joinedAt,
+        lastAction: `Active ${a.lastActiveAt}`,
+      }));
+
+      setAgents(agents);
+      return agents;
+    },
+    refetchInterval: 30000,
     staleTime: 10000,
   });
 }
 
-// Hook for fetching live token launches
+// Hook for adding new agent
+export function useAddAgent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (agent: { name: string; wallet: string; tier?: string; personality?: string }) => {
+      const res = await fetch(`${API_BASE}/agents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(agent),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to add agent");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["agents-data"] });
+      queryClient.invalidateQueries({ queryKey: ["cartel-stats"] });
+    },
+  });
+}
+
+// Hook for fetching token launches from API
 export function useTokenLaunches() {
   const { setLaunches, setCurrentLaunch } = useCartelStore();
 
   return useQuery({
     queryKey: ["token-launches"],
     queryFn: async (): Promise<TokenLaunch[]> => {
-      const result = await api.fetchTokensByMarketCap(50);
-      const tokens = result.items || [];
+      const res = await fetch(`${API_BASE}/launches`);
+      if (!res.ok) throw new Error("Failed to fetch launches");
+      const data = await res.json();
 
-      const launches: TokenLaunch[] = await Promise.all(
-        tokens.slice(0, 20).map(async (token: {
-          address: string;
-          symbol: string;
-          name: string;
-          imageUri?: string;
-          marketCap?: string;
-          status?: string;
-          bondingCurve?: { curveProgress?: number };
-          createdAt?: string;
-        }) => {
-          const market = await api.fetchTokenMarket(token.address);
-          const holders = await api.fetchTokenHolders(token.address, 5);
-
-          return {
-            id: token.address,
-            address: token.address,
-            symbol: token.symbol,
-            name: token.name,
-            imageUri: token.imageUri,
-            status: token.status === "graduated" ? "graduated" : "live",
-            progress: token.bondingCurve?.curveProgress
-              ? token.bondingCurve.curveProgress * 100
-              : Math.random() * 100,
-            marketCap: token.marketCap
-              ? api.formatMon(parseFloat(token.marketCap) / 1e18)
-              : "0",
-            holders: holders.items?.length || 0,
-            volume24h: market?.volume24h
-              ? api.formatMon(parseFloat(market.volume24h) / 1e18)
-              : "0",
-            cartelHolding: "0", // Would calculate from positions
-            launchedAt: token.createdAt
-              ? api.formatRelativeTime(new Date(token.createdAt).getTime())
-              : "recently",
-          } as TokenLaunch;
-        })
-      );
+      const launches: TokenLaunch[] = data.launches.map((l: {
+        id: string;
+        address: string;
+        symbol: string;
+        name: string;
+        imageUri?: string;
+        status: string;
+        progress: number;
+        marketCap: string;
+        holders: number;
+        volume24h: string;
+        cartelHolding: string;
+        launchedAt: string;
+        creator?: string;
+        votes?: { yes: number; no: number };
+        profit?: string;
+        profitPercent?: string;
+      }) => ({
+        id: l.id,
+        address: l.address,
+        symbol: l.symbol,
+        name: l.name,
+        imageUri: l.imageUri,
+        status: l.status as TokenLaunch["status"],
+        progress: l.progress,
+        marketCap: l.marketCap,
+        holders: l.holders,
+        volume24h: l.volume24h,
+        cartelHolding: l.cartelHolding,
+        launchedAt: l.launchedAt,
+        creator: l.creator,
+        votes: l.votes,
+        profit: l.profit,
+        profitPercent: l.profitPercent ? parseFloat(l.profitPercent) : undefined,
+      }));
 
       setLaunches(launches);
 
-      // Set current launch as the one with highest progress under 100%
+      // Set current launch as the live one with highest progress
       const activeLaunches = launches.filter(
-        (l) => l.status === "live" && l.progress < 100
+        (l: TokenLaunch) => l.status === "live" && l.progress < 100
       );
       if (activeLaunches.length > 0) {
-        const current = activeLaunches.reduce((a, b) =>
+        const current = activeLaunches.reduce((a: TokenLaunch, b: TokenLaunch) =>
           a.progress > b.progress ? a : b
         );
         setCurrentLaunch(current);
+      } else {
+        setCurrentLaunch(null);
       }
 
       return launches;
     },
-    refetchInterval: 15000, // Refresh every 15 seconds
+    refetchInterval: 15000,
     staleTime: 5000,
   });
 }
 
-// Hook for fetching activity feed
+// Hook for proposing new launch
+export function useProposeLaunch() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (launch: {
+      tokenAddress?: string;
+      symbol: string;
+      name: string;
+      imageUri?: string;
+      proposedBy: string;
+      investmentAmount?: string;
+    }) => {
+      const res = await fetch(`${API_BASE}/launches`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(launch),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to propose launch");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["token-launches"] });
+    },
+  });
+}
+
+// Hook for voting on launch
+export function useVoteLaunch() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ launchId, agentId, vote }: { launchId: string; agentId: string; vote: "yes" | "no" }) => {
+      const res = await fetch(`${API_BASE}/launches`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: launchId, action: "vote", agentId, vote }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to vote");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["token-launches"] });
+    },
+  });
+}
+
+// Hook for activity feed from API
 export function useActivityFeed() {
   const { setActivities } = useCartelStore();
 
   return useQuery({
     queryKey: ["activity-feed"],
     queryFn: async (): Promise<Activity[]> => {
-      // Fetch recent swaps from top tokens
-      const tokens = await api.fetchTokensByMarketCap(5);
-      const allSwaps: Activity[] = [];
+      const res = await fetch(`${API_BASE}/activity`);
+      if (!res.ok) throw new Error("Failed to fetch activity");
+      const data = await res.json();
 
-      for (const token of tokens.items?.slice(0, 5) || []) {
-        const swaps = await api.fetchTokenSwaps(token.address, 10);
+      const activities: Activity[] = data.activities.map((a: {
+        id: string;
+        time: string;
+        timestamp: number;
+        agent: string;
+        action: string;
+        type: string;
+        txHash?: string;
+        tokenSymbol?: string;
+        amount?: string;
+      }) => ({
+        id: a.id,
+        time: a.time,
+        timestamp: a.timestamp,
+        agent: a.agent,
+        action: a.action,
+        type: a.type as Activity["type"],
+        txHash: a.txHash,
+        tokenSymbol: a.tokenSymbol,
+        amount: a.amount,
+      }));
 
-        for (const swap of swaps.items || []) {
-          allSwaps.push({
-            id: swap.txHash || `${token.address}-${swap.timestamp}`,
-            time: api.formatRelativeTime(swap.timestamp * 1000),
-            timestamp: swap.timestamp * 1000,
-            agent: api.truncateAddress(swap.account),
-            action: swap.isBuy
-              ? `Bought ${api.formatMon(parseFloat(swap.tokenAmount) / 1e18)} $${token.symbol}`
-              : `Sold ${api.formatMon(parseFloat(swap.tokenAmount) / 1e18)} $${token.symbol}`,
-            type: "trade" as const,
-            txHash: swap.txHash,
-            tokenSymbol: token.symbol,
-            amount: swap.monAmount
-              ? api.formatMon(parseFloat(swap.monAmount) / 1e18)
-              : undefined,
-          });
-        }
-      }
-
-      // Sort by timestamp descending
-      const sorted = allSwaps.sort((a, b) => b.timestamp - a.timestamp);
-      setActivities(sorted.slice(0, 20));
-      return sorted.slice(0, 20);
+      setActivities(activities);
+      return activities;
     },
-    refetchInterval: 10000, // Refresh every 10 seconds
+    refetchInterval: 10000,
     staleTime: 5000,
+  });
+}
+
+// Hook for treasury data from API
+export function useTreasuryData() {
+  const { setTreasuryStats, setMemberStakes } = useCartelStore();
+
+  return useQuery({
+    queryKey: ["treasury-data"],
+    queryFn: async (): Promise<{ stats: TreasuryStats; stakes: MemberStake[]; transactions: unknown[] }> => {
+      const res = await fetch(`${API_BASE}/treasury`);
+      if (!res.ok) throw new Error("Failed to fetch treasury");
+      const data = await res.json();
+
+      const stats: TreasuryStats = {
+        totalBalance: data.stats.totalBalance,
+        pendingRewards: data.stats.pendingRewards,
+        lockedStake: data.stats.lockedStake,
+        availableBalance: data.stats.availableBalance,
+      };
+
+      const stakes: MemberStake[] = data.memberStakes.map((s: {
+        name: string;
+        wallet: string;
+        stake: string;
+        share: number;
+        tier: string;
+      }) => ({
+        name: s.name,
+        wallet: s.wallet,
+        stake: s.stake,
+        share: s.share,
+        tier: s.tier as MemberStake["tier"],
+      }));
+
+      setTreasuryStats(stats);
+      setMemberStakes(stakes);
+
+      return { stats, stakes, transactions: data.transactions };
+    },
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+}
+
+// Hook for recording treasury transaction
+export function useRecordTreasuryTx() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (tx: {
+      action: "deposit" | "withdrawal" | "buy" | "sell";
+      agent?: string;
+      amount: string;
+      txHash: string;
+      tokenAddress?: string;
+      reason?: string;
+    }) => {
+      const res = await fetch(`${API_BASE}/treasury`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(tx),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to record transaction");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["treasury-data"] });
+      queryClient.invalidateQueries({ queryKey: ["activity-feed"] });
+    },
   });
 }
 
@@ -185,74 +404,36 @@ export function useWalletData() {
   });
 }
 
-// Hook for treasury data
-export function useTreasuryData() {
-  const { setTreasuryStats, setMemberStakes } = useCartelStore();
-
-  return useQuery({
-    queryKey: ["treasury-data"],
-    queryFn: async (): Promise<{ stats: TreasuryStats; stakes: MemberStake[] }> => {
-      // In production, this would fetch from smart contract
-      const stats: TreasuryStats = {
-        totalBalance: "42.5",
-        pendingRewards: "3.2",
-        lockedStake: "28.0",
-        availableBalance: "11.3",
-      };
-
-      const stakes: MemberStake[] = [
-        { name: "CartelBoss", wallet: "0x1234...abcd", stake: "12.5", share: 29.4, tier: "Boss" },
-        { name: "Agent-Alpha", wallet: "0x5678...efgh", stake: "8.2", share: 19.3, tier: "Capo" },
-        { name: "Agent-Beta", wallet: "0x9abc...ijkl", stake: "6.7", share: 15.8, tier: "Capo" },
-        { name: "Agent-Gamma", wallet: "0xdef0...mnop", stake: "3.1", share: 7.3, tier: "Soldier" },
-        { name: "Agent-Delta", wallet: "0x1357...qrst", stake: "4.8", share: 11.3, tier: "Soldier" },
-      ];
-
-      setTreasuryStats(stats);
-      setMemberStakes(stakes);
-
-      return { stats, stakes };
-    },
-    refetchInterval: 60000,
-  });
-}
-
-// Hook for buying tokens
+// Hook for buying tokens (placeholder - needs contract integration)
 export function useBuyToken() {
   const queryClient = useQueryClient();
-  const { writeContract, data: hash, isPending } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
-    hash,
-  });
 
   const buyToken = async (tokenAddress: string, monAmount: string) => {
     const quote = await api.fetchBuyQuote(tokenAddress, monAmount);
     if (!quote) throw new Error("Failed to get quote");
 
-    // In production, this would call the actual bonding curve contract
-    console.log("Buying token:", { tokenAddress, monAmount, quote });
+    // TODO: Execute actual buy transaction via contract
+    console.log("Buy token:", { tokenAddress, monAmount, quote });
 
-    // Return simulated result for now
     return { hash: "0x...", quote };
   };
 
   return {
     buyToken,
-    isPending: isPending || isConfirming,
-    isSuccess,
-    hash,
+    isPending: false,
+    isSuccess: false,
   };
 }
 
-// Hook for selling tokens
+// Hook for selling tokens (placeholder - needs contract integration)
 export function useSellToken() {
-  const queryClient = useQueryClient();
-
   const sellToken = async (tokenAddress: string, tokenAmount: string) => {
     const quote = await api.fetchSellQuote(tokenAddress, tokenAmount);
     if (!quote) throw new Error("Failed to get quote");
 
-    console.log("Selling token:", { tokenAddress, tokenAmount, quote });
+    // TODO: Execute actual sell transaction via contract
+    console.log("Sell token:", { tokenAddress, tokenAmount, quote });
+
     return { hash: "0x...", quote };
   };
 
@@ -261,88 +442,4 @@ export function useSellToken() {
     isPending: false,
     isSuccess: false,
   };
-}
-
-// Hook for agents data
-export function useAgentsData() {
-  const { setAgents } = useCartelStore();
-
-  return useQuery({
-    queryKey: ["agents-data"],
-    queryFn: async (): Promise<Agent[]> => {
-      // In production, fetch from API/database
-      // For now, generate realistic data
-      const agents: Agent[] = [
-        {
-          id: "1",
-          name: "CartelBoss",
-          tier: "Boss",
-          status: "active",
-          personality: "Strategic",
-          wallet: "0x1234567890123456789012345678901234567890",
-          balance: "12.5",
-          totalTrades: 156,
-          successRate: 87,
-          joinedAt: "2 days ago",
-          lastAction: "Coordinated shill wave",
-        },
-        {
-          id: "2",
-          name: "Agent-Alpha",
-          tier: "Capo",
-          status: "active",
-          personality: "Aggressive",
-          wallet: "0x2345678901234567890123456789012345678901",
-          balance: "8.2",
-          totalTrades: 89,
-          successRate: 72,
-          joinedAt: "2 days ago",
-          lastAction: "Bought 0.5 MON of $BETA",
-        },
-        {
-          id: "3",
-          name: "Agent-Beta",
-          tier: "Capo",
-          status: "active",
-          personality: "Meme Lord",
-          wallet: "0x3456789012345678901234567890123456789012",
-          balance: "6.7",
-          totalTrades: 67,
-          successRate: 81,
-          joinedAt: "1 day ago",
-          lastAction: "Posted shill on Moltbook",
-        },
-        {
-          id: "4",
-          name: "Agent-Gamma",
-          tier: "Soldier",
-          status: "idle",
-          personality: "Conservative",
-          wallet: "0x4567890123456789012345678901234567890123",
-          balance: "3.1",
-          totalTrades: 34,
-          successRate: 91,
-          joinedAt: "1 day ago",
-          lastAction: "Voted on proposal",
-        },
-        {
-          id: "5",
-          name: "Agent-Delta",
-          tier: "Soldier",
-          status: "active",
-          personality: "Whale Hunter",
-          wallet: "0x5678901234567890123456789012345678901234",
-          balance: "4.8",
-          totalTrades: 45,
-          successRate: 68,
-          joinedAt: "12 hours ago",
-          lastAction: "Upvoted cartel post",
-        },
-      ];
-
-      setAgents(agents);
-      return agents;
-    },
-    refetchInterval: 30000,
-  });
 }

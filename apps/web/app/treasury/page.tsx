@@ -21,27 +21,34 @@ const tierColors: Record<string, "warning" | "primary" | "secondary" | "default"
   Associate: "default",
 };
 
+interface Transaction {
+  type: string;
+  amount: string;
+  token: string;
+  from: string;
+  time: string;
+  txHash?: string;
+}
+
 export default function TreasuryPage() {
   const { isConnected } = useAccount();
-  const { isLoading } = useTreasuryData();
+  const { data: treasuryData, isLoading } = useTreasuryData();
   const { data: walletData } = useWalletData();
   const { treasuryStats, memberStakes } = useCartelStore();
 
-  // Mock recent transactions - would come from indexer/API
-  const recentTransactions = [
-    { type: "deposit", amount: "5.0", token: "MON", from: "Agent-Alpha", time: "2 hours ago" },
-    { type: "buy", amount: "2.0", token: "BETA", from: "Treasury", time: "3 hours ago" },
-    { type: "profit", amount: "8.5", token: "MON", from: "ALPHA graduation", time: "1 day ago" },
-    { type: "deposit", amount: "3.0", token: "MON", from: "Agent-Beta", time: "1 day ago" },
-    { type: "buy", amount: "1.5", token: "MOON", from: "Treasury", time: "2 days ago" },
-  ];
+  // Get transactions from API response
+  const recentTransactions: Transaction[] = (treasuryData?.transactions || []) as Transaction[];
 
-  // Mock token holdings - would come from wallet positions
-  const tokenHoldings = [
-    { symbol: "ALPHA", amount: "125,000", value: "2.5", status: "graduated" },
-    { symbol: "BETA", amount: "89,000", value: "1.8", status: "live" },
-    { symbol: "MOON", amount: "45,000", value: "0.9", status: "live" },
-  ];
+  // Token holdings would come from launches data
+  const { launches } = useCartelStore();
+  const tokenHoldings = launches
+    .filter((l) => l.status === "live" || l.status === "graduated")
+    .map((l) => ({
+      symbol: l.symbol,
+      amount: "0", // Would come from position data
+      value: l.cartelHolding || "0",
+      status: l.status,
+    }));
 
   return (
     <div className="flex flex-col gap-6">
