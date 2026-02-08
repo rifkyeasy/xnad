@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLaunches, proposeLaunch, voteLaunch, updateLaunch } from "@/lib/cartel-db";
 
-const NADFUN_API = "https://testnet-api.nad.fun";
+const NADFUN_API = "https://dev-api.nad.fun";
 
 // GET /api/launches - Get all launches with live data
 export async function GET() {

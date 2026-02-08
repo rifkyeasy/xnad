@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getLaunches, getAgents, getTreasury } from "@/lib/cartel-db";
 
-const NADFUN_API = "https://testnet-api.nad.fun";
+const NADFUN_API = "https://dev-api.nad.fun";
 
 // GET /api/activity - Get live activity feed
 export async function GET() {

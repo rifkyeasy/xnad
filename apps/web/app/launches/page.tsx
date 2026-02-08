@@ -203,7 +203,7 @@ export default function LaunchesPage() {
                     <Button
                       variant="flat"
                       as="a"
-                      href={`https://testnet.nad.fun/token/${token.address}`}
+                      href={`https://nad.fun/token/${token.address}`}
                       target="_blank"
                     >
                       nad.fun

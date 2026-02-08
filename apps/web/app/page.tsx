@@ -227,7 +227,7 @@ export default function Dashboard() {
               color="primary"
               className="w-full"
               as="a"
-              href={currentLaunch ? `https://testnet.nad.fun/token/${currentLaunch.address}` : "https://testnet.nad.fun"}
+              href={currentLaunch ? `https://nad.fun/token/${currentLaunch.address}` : "https://nad.fun"}
               target="_blank"
             >
               View on nad.fun

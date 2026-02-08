@@ -1,6 +1,7 @@
 // API endpoints for nad.fun and Moltbook
-const NADFUN_API = "https://testnet-api.nad.fun";
-const MOLTBOOK_API = "https://api.moltbook.com";
+// Using dev-api.nad.fun for all calls (testnet-bot-api-server.nad.fun has DNS issues)
+const NADFUN_API = "https://dev-api.nad.fun";
+const MOLTBOOK_API = "https://www.moltbook.com/api/v1";
 
 // Utility to format relative time
 export function formatRelativeTime(timestamp: number): string {
@@ -27,29 +28,45 @@ export function formatMon(amount: string | number): string {
   return num.toFixed(2);
 }
 
-// nad.fun API calls
-export async function fetchTokensByMarketCap(limit = 20) {
+// nad.fun API calls - use bot API for discovery endpoints
+export async function fetchTokensByMarketCap(limit = 20, page = 1) {
   try {
     const response = await fetch(
-      `${NADFUN_API}/token/list?orderBy=marketCap&direction=desc&limit=${limit}`
+      `${NADFUN_API}/order/market_cap?page=${page}&limit=${limit}`
     );
     if (!response.ok) throw new Error("Failed to fetch tokens");
-    return await response.json();
+    const data = await response.json();
+    return { items: data.tokens || [] };
   } catch (error) {
     console.error("fetchTokensByMarketCap error:", error);
     return { items: [] };
   }
 }
 
-export async function fetchTokensByCreationTime(limit = 20) {
+export async function fetchTokensByCreationTime(limit = 20, page = 1) {
   try {
     const response = await fetch(
-      `${NADFUN_API}/token/list?orderBy=creationTime&direction=desc&limit=${limit}`
+      `${NADFUN_API}/order/creation_time?page=${page}&limit=${limit}`
     );
     if (!response.ok) throw new Error("Failed to fetch tokens");
-    return await response.json();
+    const data = await response.json();
+    return { items: data.tokens || [] };
   } catch (error) {
     console.error("fetchTokensByCreationTime error:", error);
+    return { items: [] };
+  }
+}
+
+export async function fetchTokensByLatestTrade(limit = 20, page = 1) {
+  try {
+    const response = await fetch(
+      `${NADFUN_API}/order/latest_trade?page=${page}&limit=${limit}`
+    );
+    if (!response.ok) throw new Error("Failed to fetch tokens");
+    const data = await response.json();
+    return { items: data.tokens || [] };
+  } catch (error) {
+    console.error("fetchTokensByLatestTrade error:", error);
     return { items: [] };
   }
 }
@@ -67,7 +84,7 @@ export async function fetchToken(address: string) {
 
 export async function fetchTokenMarket(address: string) {
   try {
-    const response = await fetch(`${NADFUN_API}/token/${address}/market`);
+    const response = await fetch(`${NADFUN_API}/token/market/${address}`);
     if (!response.ok) throw new Error("Failed to fetch token market");
     return await response.json();
   } catch (error) {
@@ -76,35 +93,39 @@ export async function fetchTokenMarket(address: string) {
   }
 }
 
-export async function fetchTokenHolders(address: string, limit = 50) {
+export async function fetchTokenHolders(address: string, limit = 50, page = 1) {
   try {
     const response = await fetch(
-      `${NADFUN_API}/token/${address}/holder?limit=${limit}`
+      `${NADFUN_API}/token/holder/${address}?page=${page}&limit=${limit}`
     );
     if (!response.ok) throw new Error("Failed to fetch holders");
-    return await response.json();
+    const data = await response.json();
+    return { items: data.holders || [] };
   } catch (error) {
     console.error("fetchTokenHolders error:", error);
     return { items: [] };
   }
 }
 
-export async function fetchTokenSwaps(address: string, limit = 50) {
+export async function fetchTokenSwaps(address: string, limit = 50, page = 1) {
   try {
     const response = await fetch(
-      `${NADFUN_API}/token/${address}/swap?limit=${limit}`
+      `${NADFUN_API}/token/swap/${address}?page=${page}&limit=${limit}`
     );
     if (!response.ok) throw new Error("Failed to fetch swaps");
-    return await response.json();
+    const data = await response.json();
+    return { items: data.swaps || [] };
   } catch (error) {
     console.error("fetchTokenSwaps error:", error);
     return { items: [] };
   }
 }
 
-export async function fetchAccountPositions(wallet: string) {
+export async function fetchAccountPositions(wallet: string, page = 1, limit = 50) {
   try {
-    const response = await fetch(`${NADFUN_API}/account/${wallet}/position`);
+    const response = await fetch(
+      `${NADFUN_API}/account/position/${wallet}?position_type=all&page=${page}&limit=${limit}`
+    );
     if (!response.ok) throw new Error("Failed to fetch positions");
     return await response.json();
   } catch (error) {
@@ -115,11 +136,29 @@ export async function fetchAccountPositions(wallet: string) {
 
 export async function fetchBuyQuote(tokenAddress: string, monAmount: string) {
   try {
-    const response = await fetch(
-      `${NADFUN_API}/token/${tokenAddress}/quote/buy?mon=${monAmount}`
-    );
-    if (!response.ok) throw new Error("Failed to get buy quote");
-    return await response.json();
+    // Get market data to calculate quote
+    const market = await fetchTokenMarket(tokenAddress);
+    if (!market) return null;
+
+    const amountIn = parseFloat(monAmount) * 1e18;
+    const fee = amountIn * 0.01; // 1% fee
+    const amountAfterFee = amountIn - fee;
+
+    // Simplified constant product calculation
+    const reserveToken = parseFloat(market.reserveToken || market.virtualToken || "0");
+    const reserveNative = parseFloat(market.reserveNative || market.virtualNative || "0");
+
+    if (reserveNative <= 0) return null;
+
+    const amountOut = (amountAfterFee * reserveToken) / (reserveNative + amountAfterFee);
+
+    return {
+      tokenAddress,
+      amountIn: amountIn.toString(),
+      amountOut: amountOut.toString(),
+      fee: fee.toString(),
+      priceImpact: ((amountAfterFee / reserveNative) * 100).toFixed(2),
+    };
   } catch (error) {
     console.error("fetchBuyQuote error:", error);
     return null;
@@ -128,11 +167,27 @@ export async function fetchBuyQuote(tokenAddress: string, monAmount: string) {
 
 export async function fetchSellQuote(tokenAddress: string, tokenAmount: string) {
   try {
-    const response = await fetch(
-      `${NADFUN_API}/token/${tokenAddress}/quote/sell?tokenAmount=${tokenAmount}`
-    );
-    if (!response.ok) throw new Error("Failed to get sell quote");
-    return await response.json();
+    // Get market data to calculate quote
+    const market = await fetchTokenMarket(tokenAddress);
+    if (!market) return null;
+
+    const amountIn = parseFloat(tokenAmount);
+    const reserveToken = parseFloat(market.reserveToken || market.virtualToken || "0");
+    const reserveNative = parseFloat(market.reserveNative || market.virtualNative || "0");
+
+    if (reserveToken <= 0) return null;
+
+    const amountOut = (amountIn * reserveNative) / (reserveToken + amountIn);
+    const fee = amountOut * 0.01; // 1% fee
+    const amountAfterFee = amountOut - fee;
+
+    return {
+      tokenAddress,
+      amountIn: amountIn.toString(),
+      amountOut: amountAfterFee.toString(),
+      fee: fee.toString(),
+      priceImpact: ((amountIn / reserveToken) * 100).toFixed(2),
+    };
   } catch (error) {
     console.error("fetchSellQuote error:", error);
     return null;
