@@ -40,6 +40,8 @@ export const CONTRACTS = {
   lens: "0x7e78A8DE94f21804F7a17F4E8BF9EC2c872187ea",
   curve: "0xA7283d07812a02AFB7C09B60f8896bCEA3F90aCE",
   wmon: "0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A",
+  // Deployed vault factory (update after deployment)
+  vaultFactory: process.env.VAULT_FACTORY_ADDRESS || "",
 };
 
 // Trading config
