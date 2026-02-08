@@ -53,11 +53,11 @@ export function useInitializeCartel() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (treasuryWallet: string) => {
+    mutationFn: async ({ treasuryWallet, force }: { treasuryWallet: string; force?: boolean }) => {
       const res = await fetch(`${API_BASE}/cartel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ treasuryWallet }),
+        body: JSON.stringify({ treasuryWallet, force }),
       });
       if (!res.ok) {
         const error = await res.json();
@@ -67,6 +67,53 @@ export function useInitializeCartel() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cartel-stats"] });
+    },
+  });
+}
+
+// Hook for updating treasury wallet
+export function useUpdateTreasuryWallet() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (treasuryWallet: string) => {
+      const res = await fetch(`${API_BASE}/cartel`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ treasuryWallet }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to update treasury wallet");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cartel-stats"] });
+    },
+  });
+}
+
+// Hook for resetting cartel
+export function useResetCartel() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${API_BASE}/cartel`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to reset cartel");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cartel-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["agents-data"] });
+      queryClient.invalidateQueries({ queryKey: ["token-launches"] });
+      queryClient.invalidateQueries({ queryKey: ["treasury-data"] });
     },
   });
 }

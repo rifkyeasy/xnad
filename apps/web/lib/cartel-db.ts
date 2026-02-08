@@ -113,6 +113,19 @@ export function initializeCartel(treasuryWallet: string): CartelDatabase {
   return db;
 }
 
+// Reset cartel (clears all data)
+export function resetCartel(): void {
+  saveDatabase({ ...defaultDB });
+}
+
+// Update treasury wallet
+export function updateTreasuryWallet(newWallet: string): CartelDatabase {
+  const db = loadDatabase();
+  db.treasuryWallet = newWallet;
+  saveDatabase(db);
+  return db;
+}
+
 // Agent operations
 export function addAgent(agent: Omit<AgentRecord, "id" | "createdAt" | "lastActiveAt" | "totalTrades" | "successfulTrades" | "totalVolume">): AgentRecord {
   const db = loadDatabase();

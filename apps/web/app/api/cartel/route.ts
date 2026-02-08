@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadDatabase, initializeCartel, getCartelConfig } from "@/lib/cartel-db";
+import { loadDatabase, initializeCartel, getCartelConfig, resetCartel, updateTreasuryWallet } from "@/lib/cartel-db";
 
 // GET /api/cartel - Get cartel info and stats
 export async function GET() {
@@ -61,7 +61,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { treasuryWallet } = body;
+    const { treasuryWallet, force } = body;
 
     if (!treasuryWallet) {
       return NextResponse.json(
@@ -71,9 +71,13 @@ export async function POST(request: NextRequest) {
     }
 
     const db = loadDatabase();
-    if (db.cartelId) {
+
+    // If force is true, reset first
+    if (force && db.cartelId) {
+      resetCartel();
+    } else if (db.cartelId) {
       return NextResponse.json(
-        { error: "Cartel already initialized" },
+        { error: "Cartel already initialized. Use force: true to reset." },
         { status: 400 }
       );
     }
@@ -87,6 +91,50 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("POST /api/cartel error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+// PATCH /api/cartel - Update treasury wallet
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { treasuryWallet } = body;
+
+    if (!treasuryWallet) {
+      return NextResponse.json(
+        { error: "Treasury wallet address required" },
+        { status: 400 }
+      );
+    }
+
+    const db = loadDatabase();
+    if (!db.cartelId) {
+      return NextResponse.json(
+        { error: "Cartel not initialized" },
+        { status: 400 }
+      );
+    }
+
+    const updatedDb = updateTreasuryWallet(treasuryWallet);
+
+    return NextResponse.json({
+      success: true,
+      treasuryWallet: updatedDb.treasuryWallet,
+    });
+  } catch (error) {
+    console.error("PATCH /api/cartel error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+// DELETE /api/cartel - Reset cartel
+export async function DELETE() {
+  try {
+    resetCartel();
+    return NextResponse.json({ success: true, message: "Cartel reset" });
+  } catch (error) {
+    console.error("DELETE /api/cartel error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

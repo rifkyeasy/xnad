@@ -14,11 +14,21 @@ import { useAccount } from "wagmi";
 
 import { title } from "@/components/primitives";
 import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
+} from "@heroui/modal";
+import {
   useCartelStats,
   useTokenLaunches,
   useActivityFeed,
   useAgentsData,
   useInitializeCartel,
+  useUpdateTreasuryWallet,
+  useResetCartel,
 } from "@/hooks/useCartelData";
 import { useCartelStore } from "@/stores/cartel";
 import { truncateAddress } from "@/lib/api";
@@ -40,6 +50,10 @@ const actionColors: Record<string, "success" | "primary" | "warning" | "secondar
 export default function Dashboard() {
   const { address, isConnected } = useAccount();
   const [treasuryWallet, setTreasuryWallet] = useState("");
+  const [newTreasuryWallet, setNewTreasuryWallet] = useState("");
+
+  // Settings modal
+  const { isOpen: isSettingsOpen, onOpen: onSettingsOpen, onClose: onSettingsClose } = useDisclosure();
 
   // Fetch live data
   const { data: cartelData, isLoading: statsLoading } = useCartelStats();
@@ -47,12 +61,31 @@ export default function Dashboard() {
   const { isLoading: activityLoading } = useActivityFeed();
   const { isLoading: agentsLoading } = useAgentsData();
   const { mutate: initCartel, isPending: isInitializing } = useInitializeCartel();
+  const { mutate: updateTreasury, isPending: isUpdatingTreasury } = useUpdateTreasuryWallet();
+  const { mutate: resetCartel, isPending: isResetting } = useResetCartel();
 
   // Get data from store
   const { stats, currentLaunch, activities, agents } = useCartelStore();
 
   const isLoading = statsLoading || launchesLoading || activityLoading || agentsLoading;
   const isInitialized = cartelData?.initialized;
+
+  const handleUpdateTreasury = () => {
+    if (!newTreasuryWallet) return;
+    updateTreasury(newTreasuryWallet, {
+      onSuccess: () => {
+        onSettingsClose();
+        setNewTreasuryWallet("");
+      },
+    });
+  };
+
+  const handleReset = () => {
+    if (confirm("Are you sure you want to reset the cartel? This will delete all data.")) {
+      resetCartel();
+      onSettingsClose();
+    }
+  };
 
   // Show initialization UI if cartel not set up
   if (!statsLoading && !isInitialized) {
@@ -76,7 +109,7 @@ export default function Dashboard() {
               size="lg"
               className="w-full"
               isLoading={isInitializing}
-              onPress={() => initCartel(treasuryWallet || address || "")}
+              onPress={() => initCartel({ treasuryWallet: treasuryWallet || address || "" })}
               isDisabled={!treasuryWallet && !address}
             >
               Initialize Cartel
@@ -96,9 +129,17 @@ export default function Dashboard() {
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-3">
-          <h1 className={title()}>Agent Cartel Dashboard</h1>
-          {isLoading && <Spinner size="sm" />}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className={title()}>Agent Cartel Dashboard</h1>
+            {isLoading && <Spinner size="sm" />}
+          </div>
+          <Button
+            variant="flat"
+            onPress={onSettingsOpen}
+          >
+            Settings
+          </Button>
         </div>
         <p className="text-default-500">
           Coordinated AI agents dominating nad.fun token launches
@@ -367,6 +408,74 @@ export default function Dashboard() {
           </div>
         </CardBody>
       </Card>
+
+      {/* Settings Modal */}
+      <Modal isOpen={isSettingsOpen} onClose={onSettingsClose} size="lg">
+        <ModalContent>
+          <ModalHeader>Cartel Settings</ModalHeader>
+          <ModalBody className="gap-6">
+            {/* Current Treasury Info */}
+            <div className="p-4 bg-default-100 rounded-lg">
+              <p className="text-sm text-default-500 mb-1">Current Treasury Wallet</p>
+              <p className="font-mono text-sm break-all">
+                {cartelData?.treasuryWallet || "Not set"}
+              </p>
+            </div>
+
+            {/* Update Treasury Wallet */}
+            <div className="flex flex-col gap-3">
+              <p className="font-medium">Update Treasury Wallet</p>
+              <Input
+                label="New Treasury Wallet Address"
+                placeholder="0x..."
+                value={newTreasuryWallet}
+                onValueChange={setNewTreasuryWallet}
+                description="Change the wallet that manages cartel funds"
+              />
+              {isConnected && (
+                <Button
+                  variant="flat"
+                  size="sm"
+                  onPress={() => setNewTreasuryWallet(address || "")}
+                >
+                  Use Connected Wallet ({truncateAddress(address || "")})
+                </Button>
+              )}
+              <Button
+                color="primary"
+                isLoading={isUpdatingTreasury}
+                onPress={handleUpdateTreasury}
+                isDisabled={!newTreasuryWallet}
+              >
+                Update Treasury Wallet
+              </Button>
+            </div>
+
+            <Divider />
+
+            {/* Danger Zone */}
+            <div className="flex flex-col gap-3">
+              <p className="font-medium text-danger">Danger Zone</p>
+              <p className="text-sm text-default-500">
+                Reset the cartel to start fresh. This will delete all agents, launches, and treasury data.
+              </p>
+              <Button
+                color="danger"
+                variant="flat"
+                isLoading={isResetting}
+                onPress={handleReset}
+              >
+                Reset Cartel
+              </Button>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onSettingsClose}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
