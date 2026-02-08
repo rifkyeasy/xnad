@@ -52,7 +52,7 @@ export const TRADING_CONFIG = {
 
 // Environment variables
 export const ENV = {
-  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || "",
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY || "",
   X_RAPIDAPI_KEY: process.env.X_RAPIDAPI_API_KEY || "",
   PRIVATE_KEY: process.env.PRIVATE_KEY || "",
   RPC_URL: process.env.RPC_URL || "https://monad-mainnet.drpc.org",

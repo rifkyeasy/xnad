@@ -148,7 +148,7 @@ async function runAgentLoop(trader: Trader): Promise<void> {
 function validateEnv(): boolean {
   const missing: string[] = [];
 
-  if (!ENV.ANTHROPIC_API_KEY) missing.push("ANTHROPIC_API_KEY");
+  if (!ENV.OPENAI_API_KEY) missing.push("OPENAI_API_KEY");
   if (!ENV.X_RAPIDAPI_KEY) missing.push("X_RAPIDAPI_API_KEY");
   if (!ENV.PRIVATE_KEY) missing.push("PRIVATE_KEY");
 

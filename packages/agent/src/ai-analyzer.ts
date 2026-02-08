@@ -1,9 +1,9 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { ENV } from "./config.js";
 import type { Tweet } from "./x-service.js";
 
-const anthropic = new Anthropic({
-  apiKey: ENV.ANTHROPIC_API_KEY,
+const openai = new OpenAI({
+  apiKey: ENV.OPENAI_API_KEY,
 });
 
 export interface TradeSignal {
@@ -63,11 +63,14 @@ Respond with JSON:
   "suggestedAmount": "0.01 to 0.1 MON based on confidence"
 }`;
 
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
       max_tokens: 1024,
-      system: SYSTEM_PROMPT,
       messages: [
+        {
+          role: "system",
+          content: SYSTEM_PROMPT,
+        },
         {
           role: "user",
           content: userPrompt,
@@ -76,13 +79,13 @@ Respond with JSON:
     });
 
     // Extract text from response
-    const textContent = response.content.find((c) => c.type === "text");
-    if (!textContent || textContent.type !== "text") {
+    const textContent = response.choices[0]?.message?.content;
+    if (!textContent) {
       throw new Error("No text response from AI");
     }
 
     // Parse JSON from response
-    const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
+    const jsonMatch = textContent.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error("No JSON found in AI response");
     }
