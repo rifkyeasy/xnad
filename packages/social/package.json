@@ -1,8 +1,8 @@
 {
-  "name": "@freezy/social",
+  "name": "@xnad/social",
   "version": "0.1.0",
   "private": true,
-  "description": "Social platform integration for Freezy",
+  "description": "Social platform integration for xnad",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -22,8 +22,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@freezy/config": "workspace:*",
-    "@freezy/shared": "workspace:*"
+    "@xnad/config": "workspace:*",
+    "@xnad/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.13.1",

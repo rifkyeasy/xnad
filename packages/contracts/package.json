@@ -1,8 +1,8 @@
 {
-  "name": "@freezy/contracts",
+  "name": "@xnad/contracts",
   "version": "0.1.0",
   "private": true,
-  "description": "Smart contracts for Freezy trading agent",
+  "description": "Smart contracts for xnad trading agent",
   "scripts": {
     "build": "forge build",
     "test": "forge test",

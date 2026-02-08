@@ -1,7 +1,7 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Freezy",
+  name: "xnad",
   description: "Social AI Trading Agent for nad.fun on Monad",
   navItems: [
     {
@@ -32,8 +32,9 @@ export const siteConfig = {
     },
   ],
   links: {
-    github: "https://github.com/freezy-app",
-    twitter: "https://twitter.com/freezy_app",
+    github: "https://github.com/xnad-fun",
+    twitter: "https://twitter.com/xnad_fun",
+    xnad: "https://xnad.fun",
     nadfun: "https://nad.fun",
     monad: "https://monad.xyz",
   },

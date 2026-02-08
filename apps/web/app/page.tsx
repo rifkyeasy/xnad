@@ -48,7 +48,7 @@ export default function Dashboard() {
       <div className="flex justify-between items-start">
         <div>
           <h1 className={title()}>Dashboard</h1>
-          <p className="text-default-500 mt-1">Freezy - Social AI Trading Agent</p>
+          <p className="text-default-500 mt-1">xnad - Social AI Trading Agent</p>
         </div>
         {selectedStrategy && (
           <Chip color={strategyColors[selectedStrategy]} size="lg">

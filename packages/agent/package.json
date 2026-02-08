@@ -1,5 +1,5 @@
 {
-  "name": "@freezy/agent",
+  "name": "@xnad/agent",
   "version": "1.0.0",
   "description": "Social-Execution Trading Agent for nad.fun",
   "main": "dist/index.js",

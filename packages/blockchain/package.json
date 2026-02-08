@@ -1,8 +1,8 @@
 {
-  "name": "@freezy/blockchain",
+  "name": "@xnad/blockchain",
   "version": "0.1.0",
   "private": true,
-  "description": "Monad blockchain and nad.fun integration for Freezy",
+  "description": "Monad blockchain and nad.fun integration for xnad",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -30,8 +30,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@freezy/config": "workspace:*",
-    "@freezy/shared": "workspace:*",
+    "@xnad/config": "workspace:*",
+    "@xnad/shared": "workspace:*",
     "viem": "^2.23.2"
   },
   "devDependencies": {

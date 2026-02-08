@@ -1,13 +1,13 @@
 {
-  "name": "freezy",
+  "name": "xnad",
   "version": "0.1.0",
   "private": true,
-  "description": "Freezy - Social AI Trading Agent for nad.fun on Monad",
+  "description": "xnad - Social AI Trading Agent for nad.fun on Monad",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/freezy"
+    "url": "https://github.com/xnad-fun/xnad"
   },
-  "author": "Freezy Team",
+  "author": "xnad Team",
   "license": "MIT",
   "packageManager": "pnpm@9.15.0",
   "engines": {
@@ -17,9 +17,9 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "dev:web": "turbo run dev --filter=@freezy/web",
-    "dev:backend": "turbo run dev --filter=@freezy/backend",
-    "dev:agent": "turbo run dev --filter=@freezy/agent",
+    "dev:web": "turbo run dev --filter=@xnad/web",
+    "dev:backend": "turbo run dev --filter=@xnad/backend",
+    "dev:agent": "turbo run dev --filter=@xnad/agent",
     "start": "turbo run start",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
