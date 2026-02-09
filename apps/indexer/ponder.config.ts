@@ -1,11 +1,16 @@
 import { createConfig } from "ponder";
-import { http } from "viem";
+import { http, fallback } from "viem";
 
 import { VaultFactoryAbi } from "./abis/VaultFactory";
 import { UserVaultAbi } from "./abis/UserVault";
 
-// Monad Testnet
-const RPC_URL = process.env.RPC_URL || "https://testnet-rpc.monad.xyz";
+// Monad Testnet RPC endpoints
+const RPC_URLS = [
+  process.env.RPC_URL || "https://testnet-rpc.monad.xyz",
+  "https://monad-testnet.drpc.org",
+  "https://rpc.ankr.com/monad_testnet",
+  "https://monad-testnet.api.onfinality.io/public",
+];
 
 // Deployed contract addresses
 const VAULT_FACTORY_ADDRESS = "0x164B4eF50c0C8C75Dc6F571e62731C4Fa0C6283A";
@@ -20,11 +25,15 @@ export default createConfig({
   chains: {
     monadTestnet: {
       id: 10143,
-      rpc: http(RPC_URL, {
-        retryCount: 5,
-        retryDelay: 2000,
-      }),
-      maxRequestsPerSecond: 5,
+      rpc: fallback(
+        RPC_URLS.map((url) =>
+          http(url, {
+            retryCount: 3,
+            retryDelay: 1000,
+          })
+        )
+      ),
+      maxRequestsPerSecond: 10,
     },
   },
   contracts: {
