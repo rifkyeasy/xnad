@@ -2,18 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
-import {
-  Card,
-  CardBody,
-  Button,
-  Input,
-  Spinner,
-  Progress,
-} from "@heroui/react";
+import { Card, CardBody } from "@heroui/card";
+import { Button } from "@heroui/button";
+import { Input } from "@heroui/input";
+import { Spinner } from "@heroui/spinner";
+import { Progress } from "@heroui/progress";
 import { useVaultFactory, useVault } from "@/hooks/useVault";
 import { useAgentStore, type StrategyType } from "@/stores/agent";
 import { StrategyCards } from "@/components/agent/StrategyCards";
 import { AgentDashboard } from "@/components/agent/AgentDashboard";
+import { STRATEGY_CONFIG, StrategyType as StrategyEnum } from "@/config/contracts";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
 
@@ -84,15 +82,15 @@ export default function AgentPage() {
       setXHandle(xInput);
       setXAnalysis(data.analysis, data.recommendedStrategy);
 
-      // Set default stop-loss/take-profit based on strategy
-      const strategyDefaults = {
-        CONSERVATIVE: { stopLoss: 10, takeProfit: 30 },
-        BALANCED: { stopLoss: 20, takeProfit: 50 },
-        AGGRESSIVE: { stopLoss: 35, takeProfit: 100 },
+      // Set default stop-loss/take-profit based on strategy using central config
+      const strategyEnumMap: Record<StrategyType, StrategyEnum> = {
+        CONSERVATIVE: StrategyEnum.CONSERVATIVE,
+        BALANCED: StrategyEnum.BALANCED,
+        AGGRESSIVE: StrategyEnum.AGGRESSIVE,
       };
-      const defaults = strategyDefaults[data.recommendedStrategy as StrategyType];
-      setStopLoss(defaults.stopLoss);
-      setTakeProfit(defaults.takeProfit);
+      const strategyConfig = STRATEGY_CONFIG[strategyEnumMap[data.recommendedStrategy as StrategyType]];
+      setStopLoss(strategyConfig.stopLoss * 100);
+      setTakeProfit(strategyConfig.takeProfit * 100);
     } catch (err) {
       console.error("Analysis error:", err);
       setError(err instanceof Error ? err.message : "Analysis failed");
@@ -122,10 +120,15 @@ export default function AgentPage() {
       }
 
       if (vault) {
-        // Set strategy on-chain
-        const strategyIndex = strategy === "CONSERVATIVE" ? 0 : strategy === "AGGRESSIVE" ? 2 : 1;
-        const maxAmounts = { CONSERVATIVE: "0.01", BALANCED: "0.05", AGGRESSIVE: "0.1" };
-        await setStrategy(strategyIndex, maxAmounts[strategy]);
+        // Set strategy on-chain using central config
+        const strategyEnumMap: Record<StrategyType, StrategyEnum> = {
+          CONSERVATIVE: StrategyEnum.CONSERVATIVE,
+          BALANCED: StrategyEnum.BALANCED,
+          AGGRESSIVE: StrategyEnum.AGGRESSIVE,
+        };
+        const strategyIndex = strategyEnumMap[strategy];
+        const strategyConfig = STRATEGY_CONFIG[strategyIndex];
+        await setStrategy(strategyIndex, strategyConfig.maxTradeAmount);
 
         // Update backend
         await fetch(`${BACKEND_URL}/api/users/${address}/strategy`, {

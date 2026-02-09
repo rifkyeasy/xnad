@@ -12,15 +12,21 @@ import {
 import { Link } from "@heroui/link";
 import { link as linkStyles } from "@heroui/theme";
 import { Chip } from "@heroui/chip";
+import { Tooltip } from "@heroui/tooltip";
 import NextLink from "next/link";
 import clsx from "clsx";
+import { useChainId } from "wagmi";
 
 import { siteConfig } from "@/config/site";
+import { MONAD_TESTNET } from "@/config/contracts";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { WalletButton } from "@/components/wallet-button";
 import { GithubIcon, TwitterIcon, CartelLogo } from "@/components/icons";
 
 export const Navbar = () => {
+  const chainId = useChainId();
+  const isTestnet = chainId === MONAD_TESTNET.id;
+
   return (
     <HeroUINavbar maxWidth="xl" position="sticky">
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
@@ -31,6 +37,19 @@ export const Navbar = () => {
             <Chip color="warning" size="sm" variant="flat">
               Beta
             </Chip>
+            {isTestnet && (
+              <Tooltip content="Connected to Monad Testnet. Get MON from faucet.">
+                <Link
+                  href={MONAD_TESTNET.faucetUrl}
+                  isExternal
+                  className="no-underline"
+                >
+                  <Chip color="secondary" size="sm" variant="flat">
+                    Testnet
+                  </Chip>
+                </Link>
+              </Tooltip>
+            )}
           </NextLink>
         </NavbarBrand>
         <ul className="hidden lg:flex gap-4 justify-start ml-2">

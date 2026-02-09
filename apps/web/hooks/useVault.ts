@@ -3,6 +3,7 @@
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseEther, formatEther } from "viem";
 import { useState } from "react";
+import { VAULT_CONTRACTS } from "@/config/contracts";
 
 const USER_VAULT_ABI = [
   {
@@ -111,8 +112,8 @@ const VAULT_FACTORY_ABI = [
   },
 ] as const;
 
-// Update with deployed address
-const VAULT_FACTORY_ADDRESS = process.env.NEXT_PUBLIC_VAULT_FACTORY_ADDRESS as `0x${string}`;
+// Use deployed vault factory address
+const VAULT_FACTORY_ADDRESS = VAULT_CONTRACTS.vaultFactory as `0x${string}`;
 
 export function useVaultFactory(userAddress?: string) {
   const { data: hasVault } = useReadContract({

@@ -4,9 +4,17 @@ import type { XAnalysis } from '../types/index.js';
 
 const USE_MOCK_DATA = process.env.USE_MOCK_DATA === 'true';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization to avoid errors when OPENAI_API_KEY is not set
+let openai: OpenAI | null = null;
+
+function getOpenAI(): OpenAI {
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+}
 
 interface Tweet {
   text: string;
@@ -230,7 +238,7 @@ Analyze and return JSON only:
   "reasoning": "brief explanation of your assessment"
 }`;
 
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model: 'gpt-4.1-mini',
     max_tokens: 1024,
     messages: [

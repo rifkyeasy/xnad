@@ -1,61 +1,24 @@
-import { config } from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+// Contract addresses deployed on Monad Testnet
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Load .env from monorepo root
-config({ path: path.resolve(__dirname, '../../../.env') });
-
-// Popular crypto/Monad X accounts to monitor
-export const WATCHED_ACCOUNTS = [
-  'moaborz', // Monad co-founder
-  'notthreadguy', // Monad co-founder
-  '0xsmac', // Monad
-  'nikitosk', // Monad community
-  'nad_fun', // nad.fun official
-  'molooch', // Monad community
-  'MonadChad', // Monad community
-];
-
-// Keywords that indicate a potential trade signal
-export const SIGNAL_KEYWORDS = [
-  'launch',
-  'launching',
-  'buy',
-  'bullish',
-  'moon',
-  'gem',
-  'alpha',
-  'airdrop',
-  'mint',
-  'pumping',
-  'aping',
-  'degen',
-  '$', // Token mentions like $BTGO
-  '0x', // Contract addresses
-  'nad.fun',
-  'nadfun',
-];
-
-// nad.fun testnet contract addresses
+// nad.fun contracts (testnet)
 export const NADFUN_CONTRACTS = {
   bondingCurveRouter: '0x865054F0F6A288adaAc30261731361EA7E908003',
   dexRouter: '0x0B79d71AE99528D1dB24A4148b5f4F865cc2b137',
   lens: '0x7e78A8DE94f21804F7a17F4E8BF9EC2c872187ea',
   curve: '0xA7283d07812a02AFB7C09B60f8896bCEA3F90aCE',
   wmon: '0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A',
-};
+} as const;
 
 // User vault contracts (deployed by us on Monad testnet)
 export const VAULT_CONTRACTS = {
-  vaultFactory: process.env.VAULT_FACTORY_ADDRESS || '0x164B4eF50c0C8C75Dc6F571e62731C4Fa0C6283A',
-};
+  vaultFactory: process.env.NEXT_PUBLIC_VAULT_FACTORY_ADDRESS || '0x164B4eF50c0C8C75Dc6F571e62731C4Fa0C6283A',
+} as const;
 
 // Testnet tokens (mirrored from mainnet)
 export const TESTNET_TOKENS = {
   chog: '0x6946EE2E38e871B6cE0a70908F806036e9387777', // Chog - mirrored from mainnet
   tagt: '0xfDB4DC8BFd39515762Dca9C671701E68F5297777', // Test Agent Token - original test token
-};
+} as const;
 
 // Real tokens from nad.fun mainnet categorized by market cap (for reference)
 export const MARKET_TOKENS = {
@@ -82,21 +45,51 @@ export const MARKET_TOKENS = {
     '0x93A7006bD345a7dFfF35910Da2DB97bA4Cb67777', // TABBY - $7.1K
     '0x48223050FE5d96E55e56283de15504490d557777', // Mongo - $6.7K
   ],
-};
+} as const;
 
-// Trading config
-export const TRADING_CONFIG = {
-  maxBuyAmount: '0.1', // Max MON per trade
-  slippagePercent: 5, // 5% slippage tolerance
-  minConfidence: 0.7, // Minimum AI confidence to execute trade
-  pollIntervalMs: 60000, // Check every 60 seconds
-};
+// Strategy type enum matching smart contract
+export enum StrategyType {
+  CONSERVATIVE = 0,
+  BALANCED = 1,
+  AGGRESSIVE = 2,
+}
 
-// Environment variables
-export const ENV = {
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
-  X_RAPIDAPI_KEY: process.env.X_RAPIDAPI_API_KEY || '',
-  PRIVATE_KEY: process.env.PRIVATE_KEY || '',
-  RPC_URL: process.env.RPC_URL || 'https://testnet-rpc.monad.xyz',
-  DRY_RUN: process.env.DRY_RUN === 'true',
-};
+// Strategy configs matching agent config
+export const STRATEGY_CONFIG = {
+  [StrategyType.CONSERVATIVE]: {
+    name: 'Conservative',
+    minConfidence: 0.85,
+    maxTradeAmount: '0.01',
+    riskLevels: ['low'],
+    stopLoss: 0.1, // 10%
+    takeProfit: 0.3, // 30%
+    description: 'Low risk, stable returns. Trades only high-confidence signals on established tokens.',
+  },
+  [StrategyType.BALANCED]: {
+    name: 'Balanced',
+    minConfidence: 0.7,
+    maxTradeAmount: '0.05',
+    riskLevels: ['low', 'medium'],
+    stopLoss: 0.2, // 20%
+    takeProfit: 0.5, // 50%
+    description: 'Moderate risk with balanced approach. Diversified across token types.',
+  },
+  [StrategyType.AGGRESSIVE]: {
+    name: 'Aggressive',
+    minConfidence: 0.5,
+    maxTradeAmount: '0.1',
+    riskLevels: ['low', 'medium', 'high'],
+    stopLoss: 0.35, // 35%
+    takeProfit: 1.0, // 100%
+    description: 'High risk, high reward. Early entry on emerging tokens with potential for large gains.',
+  },
+} as const;
+
+// Monad testnet chain config
+export const MONAD_TESTNET = {
+  id: 10143,
+  name: 'Monad Testnet',
+  rpcUrl: 'https://testnet-rpc.monad.xyz',
+  explorerUrl: 'https://testnet.monadexplorer.com',
+  faucetUrl: 'https://faucet.monad.xyz/',
+} as const;

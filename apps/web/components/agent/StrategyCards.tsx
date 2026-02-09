@@ -1,7 +1,10 @@
 "use client";
 
-import { Card, CardBody, CardFooter, Button, Chip } from "@heroui/react";
+import { Card, CardBody, CardFooter } from "@heroui/card";
+import { Button } from "@heroui/button";
+import { Chip } from "@heroui/chip";
 import type { StrategyType } from "@/stores/agent";
+import { STRATEGY_CONFIG, StrategyType as StrategyEnum } from "@/config/contracts";
 
 interface StrategyConfig {
   type: StrategyType;
@@ -18,47 +21,48 @@ interface StrategyConfig {
   };
 }
 
+// Map strategy enum to UI config
 const STRATEGIES: StrategyConfig[] = [
   {
     type: "CONSERVATIVE",
-    title: "Conservative",
-    description: "Low risk, established tokens only. Small position sizes with tight stop-losses.",
+    title: STRATEGY_CONFIG[StrategyEnum.CONSERVATIVE].name,
+    description: STRATEGY_CONFIG[StrategyEnum.CONSERVATIVE].description,
     icon: "🛡️",
     color: "success",
     metrics: {
-      confidence: ">85%",
-      maxTrade: "0.01 MON",
-      riskLevel: "Low only",
-      stopLoss: "10%",
-      takeProfit: "30%",
+      confidence: `>${(STRATEGY_CONFIG[StrategyEnum.CONSERVATIVE].minConfidence * 100).toFixed(0)}%`,
+      maxTrade: `${STRATEGY_CONFIG[StrategyEnum.CONSERVATIVE].maxTradeAmount} MON`,
+      riskLevel: STRATEGY_CONFIG[StrategyEnum.CONSERVATIVE].riskLevels.map(r => r.charAt(0).toUpperCase() + r.slice(1)).join(" only"),
+      stopLoss: `${(STRATEGY_CONFIG[StrategyEnum.CONSERVATIVE].stopLoss * 100).toFixed(0)}%`,
+      takeProfit: `${(STRATEGY_CONFIG[StrategyEnum.CONSERVATIVE].takeProfit * 100).toFixed(0)}%`,
     },
   },
   {
     type: "BALANCED",
-    title: "Balanced",
-    description: "Moderate risk with a mix of established and newer tokens. Standard position sizing.",
+    title: STRATEGY_CONFIG[StrategyEnum.BALANCED].name,
+    description: STRATEGY_CONFIG[StrategyEnum.BALANCED].description,
     icon: "⚖️",
     color: "primary",
     metrics: {
-      confidence: "70-85%",
-      maxTrade: "0.05 MON",
-      riskLevel: "Low & Medium",
-      stopLoss: "20%",
-      takeProfit: "50%",
+      confidence: `${(STRATEGY_CONFIG[StrategyEnum.BALANCED].minConfidence * 100).toFixed(0)}-85%`,
+      maxTrade: `${STRATEGY_CONFIG[StrategyEnum.BALANCED].maxTradeAmount} MON`,
+      riskLevel: STRATEGY_CONFIG[StrategyEnum.BALANCED].riskLevels.map(r => r.charAt(0).toUpperCase() + r.slice(1)).join(" & "),
+      stopLoss: `${(STRATEGY_CONFIG[StrategyEnum.BALANCED].stopLoss * 100).toFixed(0)}%`,
+      takeProfit: `${(STRATEGY_CONFIG[StrategyEnum.BALANCED].takeProfit * 100).toFixed(0)}%`,
     },
   },
   {
     type: "AGGRESSIVE",
-    title: "Aggressive",
-    description: "High risk, including new and trending tokens. Larger positions with wider stop-losses.",
+    title: STRATEGY_CONFIG[StrategyEnum.AGGRESSIVE].name,
+    description: STRATEGY_CONFIG[StrategyEnum.AGGRESSIVE].description,
     icon: "🚀",
     color: "danger",
     metrics: {
-      confidence: "50-70%",
-      maxTrade: "0.1 MON",
+      confidence: `${(STRATEGY_CONFIG[StrategyEnum.AGGRESSIVE].minConfidence * 100).toFixed(0)}-70%`,
+      maxTrade: `${STRATEGY_CONFIG[StrategyEnum.AGGRESSIVE].maxTradeAmount} MON`,
       riskLevel: "All levels",
-      stopLoss: "35%",
-      takeProfit: "100%",
+      stopLoss: `${(STRATEGY_CONFIG[StrategyEnum.AGGRESSIVE].stopLoss * 100).toFixed(0)}%`,
+      takeProfit: `${(STRATEGY_CONFIG[StrategyEnum.AGGRESSIVE].takeProfit * 100).toFixed(0)}%`,
     },
   },
 ];

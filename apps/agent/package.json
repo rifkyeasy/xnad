@@ -10,10 +10,15 @@
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
     "agent": "tsx src/index.ts",
+    "vault-agent": "tsx src/vault-agent.ts",
     "test:nadfun": "tsx src/test-nadfun.ts",
     "list-tokens": "tsx src/list-tokens.ts",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\""
+    "fetch-tokens": "tsx src/fetch-tokens.ts",
+    "mirror-tokens": "tsx src/mirror-tokens.ts",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@nadfun/sdk": "^0.4.3",
@@ -25,6 +30,7 @@
     "@types/node": "^20.11.0",
     "prettier": "^3.8.1",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.0.18"
   }
 }

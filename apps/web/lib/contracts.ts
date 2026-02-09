@@ -3,17 +3,19 @@
 export const MONAD_TESTNET_CHAIN_ID = 10143;
 export const MONAD_MAINNET_CHAIN_ID = 41454;
 
-// Contract Addresses
+// Contract Addresses (synced with apps/agent/src/config.ts)
 export const CONTRACTS = {
   testnet: {
-    dexRouter: "0x5D4a4f430cA3B1b2dB86B9cFE48a5316800F5fb2" as const,
+    // nad.fun testnet contracts
     bondingCurveRouter: "0x865054F0F6A288adaAc30261731361EA7E908003" as const,
-    lens: "0xB056d79CA5257589692699a46623F901a3BB76f1" as const,
-    curve: "0x1228b0dc9481C11D3071E7A924B794CfB038994e" as const,
-    wmon: "0x5a4E0bFDeF88C9032CB4d24338C5EB3d3870BfDd" as const,
+    dexRouter: "0x0B79d71AE99528D1dB24A4148b5f4F865cc2b137" as const,
+    lens: "0x7e78A8DE94f21804F7a17F4E8BF9EC2c872187ea" as const,
+    curve: "0xA7283d07812a02AFB7C09B60f8896bCEA3F90aCE" as const,
+    wmon: "0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A" as const,
     v3Factory: "0xd0a37cf728CE2902eB8d4F6f2afc76854048253b" as const,
   },
   mainnet: {
+    // nad.fun mainnet contracts (for reference)
     dexRouter: "0x0B79d71AE99528D1dB24A4148b5f4F865cc2b137" as const,
     bondingCurveRouter: "0x6F6B8F1a20703309951a5127c45B49b1CD981A22" as const,
     lens: "0x7e78A8DE94f21804F7a17F4E8BF9EC2c872187ea" as const,

@@ -37,8 +37,9 @@ export const monadTestnet = {
   testnet: true,
 } as const;
 
+// Use testnet for development
 export const wagmiConfig = createConfig({
-  chains: [monadMainnet],
+  chains: [monadTestnet],
   connectors: [
     injected(),
     walletConnect({
@@ -46,7 +47,7 @@ export const wagmiConfig = createConfig({
     }),
   ],
   transports: {
-    [monadMainnet.id]: http(),
+    [monadTestnet.id]: http(),
   },
   ssr: true,
 });

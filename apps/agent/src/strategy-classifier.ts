@@ -122,3 +122,7 @@ export function getStrategyDescription(type: StrategyType): string {
       return 'High risk, including new and trending tokens. Larger positions with wider stop-losses.';
   }
 }
+
+export function getStrategyConfig(type: StrategyType): StrategyConfig {
+  return STRATEGY_CONFIGS[type];
+}

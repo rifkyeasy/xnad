@@ -20,6 +20,7 @@ import { useAccount } from "wagmi";
 import { usePublicClient } from "wagmi";
 import { type Address } from "viem";
 import { title } from "@/components/primitives";
+import { MONAD_TESTNET, TESTNET_TOKENS } from "@/config/contracts";
 import {
   useBuyToken,
   useSellToken,
@@ -180,6 +181,31 @@ export default function TradePage() {
             </Button>
           </div>
 
+          {/* Quick select testnet tokens */}
+          <div className="flex flex-wrap gap-2">
+            <span className="text-sm text-default-500 self-center">Quick load:</span>
+            <Button
+              size="sm"
+              variant="flat"
+              onPress={() => {
+                setTokenAddress(TESTNET_TOKENS.chog);
+                setTokenInfo(null);
+              }}
+            >
+              $CHOG
+            </Button>
+            <Button
+              size="sm"
+              variant="flat"
+              onPress={() => {
+                setTokenAddress(TESTNET_TOKENS.tagt);
+                setTokenInfo(null);
+              }}
+            >
+              $TAGT
+            </Button>
+          </div>
+
           {tokenError && (
             <p className="text-danger text-sm">{tokenError}</p>
           )}
@@ -272,7 +298,7 @@ export default function TradePage() {
                 <p className="text-sm text-default-500 break-all mb-3">TX: {txHash}</p>
                 <Button
                   as="a"
-                  href={`https://monadexplorer.com/tx/${txHash}`}
+                  href={`${MONAD_TESTNET.explorerUrl}/tx/${txHash}`}
                   target="_blank"
                   variant="flat"
                   size="sm"

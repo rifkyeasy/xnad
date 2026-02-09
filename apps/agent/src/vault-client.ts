@@ -175,6 +175,10 @@ export class VaultClient {
     return this.account.address;
   }
 
+  get address(): string {
+    return this.account.address;
+  }
+
   // Get vault address for a user
   async getVaultAddress(userAddress: string): Promise<string | null> {
     try {
@@ -375,4 +379,14 @@ export class VaultClient {
       return [];
     }
   }
+}
+
+// Singleton instance
+let vaultClient: VaultClient | null = null;
+
+export function getVaultClient(): VaultClient {
+  if (!vaultClient) {
+    vaultClient = new VaultClient(VAULT_CONTRACTS.vaultFactory);
+  }
+  return vaultClient;
 }

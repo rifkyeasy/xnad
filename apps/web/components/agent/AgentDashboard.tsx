@@ -1,24 +1,24 @@
 "use client";
 
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Button } from "@heroui/button";
+import { Chip } from "@heroui/chip";
+import { Switch } from "@heroui/switch";
+import { Input } from "@heroui/input";
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Chip,
-  Switch,
-  Input,
   Modal,
   ModalContent,
   ModalHeader,
   ModalBody,
   ModalFooter,
   useDisclosure,
-  Progress,
-  Divider,
-} from "@heroui/react";
+} from "@heroui/modal";
+import { Progress } from "@heroui/progress";
+import { Divider } from "@heroui/divider";
+import { Spinner } from "@heroui/spinner";
 import { useState } from "react";
 import { useVault } from "@/hooks/useVault";
+import { usePositions, useUserSettings, useTradeHistory } from "@/hooks/usePositions";
 import { useAgentStore, type Position } from "@/stores/agent";
 
 const strategyColors = {
@@ -49,16 +49,34 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
     refetchBalance,
   } = useVault(vaultAddress);
 
+  // Fetch real positions from backend
+  const { positions: backendPositions, isLoading: positionsLoading, refetch: refetchPositions } = usePositions();
+
+  // Fetch and sync user settings with backend
+  const { settings, isLoading: settingsLoading, updateSettings } = useUserSettings();
+
+  // Get trade history
+  const { trades } = useTradeHistory(10);
+
   const {
     selectedStrategy,
-    autoTrade,
-    autoRebalance,
-    stopLossPercent,
-    takeProfitPercent,
-    positions,
-    setAutoTrade,
-    setAutoRebalance,
   } = useAgentStore();
+
+  // Use backend positions, fallback to store positions
+  const positions = backendPositions.length > 0 ? backendPositions : [];
+  const autoTrade = settings.autoTrade;
+  const autoRebalance = settings.autoRebalance;
+  const stopLossPercent = settings.stopLossPercent;
+  const takeProfitPercent = settings.takeProfitPercent;
+
+  // Handle settings changes
+  const handleAutoTradeChange = async (value: boolean) => {
+    await updateSettings({ autoTrade: value });
+  };
+
+  const handleAutoRebalanceChange = async (value: boolean) => {
+    await updateSettings({ autoRebalance: value });
+  };
 
   const depositModal = useDisclosure();
   const withdrawModal = useDisclosure();
@@ -149,11 +167,18 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
 
       {/* Positions */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex justify-between items-center">
           <h2 className="text-lg font-bold">Current Positions</h2>
+          <Button size="sm" variant="flat" onPress={refetchPositions} isLoading={positionsLoading}>
+            Refresh
+          </Button>
         </CardHeader>
         <CardBody>
-          {positions.length === 0 ? (
+          {positionsLoading && positions.length === 0 ? (
+            <div className="flex justify-center py-8">
+              <Spinner />
+            </div>
+          ) : positions.length === 0 ? (
             <p className="text-default-500 text-center py-8">
               No positions yet. The agent will start trading based on signals.
             </p>
@@ -182,8 +207,9 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
             </div>
             <Switch
               isSelected={autoTrade}
-              onValueChange={setAutoTrade}
+              onValueChange={handleAutoTradeChange}
               color="success"
+              isDisabled={settingsLoading}
             />
           </div>
 
@@ -198,8 +224,9 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
             </div>
             <Switch
               isSelected={autoRebalance}
-              onValueChange={setAutoRebalance}
+              onValueChange={handleAutoRebalanceChange}
               color="success"
+              isDisabled={settingsLoading}
             />
           </div>
 

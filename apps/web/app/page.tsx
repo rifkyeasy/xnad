@@ -6,6 +6,7 @@ import { Divider } from "@heroui/divider";
 import { Button } from "@heroui/button";
 import { useAccount, useBalance } from "wagmi";
 import { useRouter } from "next/navigation";
+import { formatEther } from "viem";
 
 import { title } from "@/components/primitives";
 import { useAgentStore } from "@/stores/agent";
@@ -63,7 +64,7 @@ export default function Dashboard() {
           <CardBody className="text-center py-4">
             <p className="text-default-500 text-sm">Wallet Balance</p>
             <p className="text-2xl font-bold">
-              {balance ? parseFloat(balance.formatted).toFixed(4) : "0"} MON
+              {balance ? parseFloat(formatEther(balance.value)).toFixed(4) : "0"} MON
             </p>
           </CardBody>
         </Card>
