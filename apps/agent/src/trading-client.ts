@@ -3,16 +3,16 @@
  * Uses nad.fun SDK for all trading operations
  */
 
-import { getNadFunClient } from "./nadfun-client.js";
-import { ENV, TRADING_CONFIG } from "./config.js";
-import type { TradeSignal } from "./ai-analyzer.js";
+import { getNadFunClient } from './nadfun-client.js';
+import { ENV, TRADING_CONFIG } from './config.js';
+import type { TradeSignal } from './ai-analyzer.js';
 
 export interface TradeResult {
   success: boolean;
   txHash?: string;
   error?: string;
   tokenAddress: string;
-  action: "buy" | "sell";
+  action: 'buy' | 'sell';
   amountIn: string;
   amountOut?: string;
 }
@@ -48,15 +48,15 @@ class NadFunTradingClient implements TradingClient {
     if (!signal.tokenAddress) {
       return {
         success: false,
-        error: "No token address provided",
-        tokenAddress: "",
-        action: "buy",
-        amountIn: "0",
+        error: 'No token address provided',
+        tokenAddress: '',
+        action: 'buy',
+        amountIn: '0',
       };
     }
 
     // Cap at max buy amount
-    const requestedAmount = parseFloat(signal.suggestedAmount || "0.01");
+    const requestedAmount = parseFloat(signal.suggestedAmount || '0.01');
     const maxAmount = parseFloat(TRADING_CONFIG.maxBuyAmount);
     const amount = Math.min(requestedAmount, maxAmount).toString();
 
@@ -69,9 +69,9 @@ class NadFunTradingClient implements TradingClient {
       console.log(`[DRY RUN] Would buy ${amount} MON worth of ${signal.tokenAddress}`);
       return {
         success: true,
-        txHash: "0xDRY_RUN",
+        txHash: '0xDRY_RUN',
         tokenAddress: signal.tokenAddress,
-        action: "buy",
+        action: 'buy',
         amountIn: amount,
       };
     }
@@ -92,17 +92,17 @@ class NadFunTradingClient implements TradingClient {
         txHash: result.txHash,
         error: result.error,
         tokenAddress: signal.tokenAddress,
-        action: "buy",
+        action: 'buy',
         amountIn: amount,
         amountOut: quote.amount,
       };
     } catch (error) {
-      console.error("Buy failed:", error);
+      console.error('Buy failed:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
         tokenAddress: signal.tokenAddress,
-        action: "buy",
+        action: 'buy',
         amountIn: amount,
       };
     }
@@ -117,9 +117,9 @@ class NadFunTradingClient implements TradingClient {
       console.log(`[DRY RUN] Would sell ${amount} tokens`);
       return {
         success: true,
-        txHash: "0xDRY_RUN",
+        txHash: '0xDRY_RUN',
         tokenAddress,
-        action: "sell",
+        action: 'sell',
         amountIn: amount,
       };
     }
@@ -140,17 +140,17 @@ class NadFunTradingClient implements TradingClient {
         txHash: result.txHash,
         error: result.error,
         tokenAddress,
-        action: "sell",
+        action: 'sell',
         amountIn: amount,
         amountOut: quote.amount,
       };
     } catch (error) {
-      console.error("Sell failed:", error);
+      console.error('Sell failed:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
         tokenAddress,
-        action: "sell",
+        action: 'sell',
         amountIn: amount,
       };
     }
@@ -170,7 +170,7 @@ let tradingClient: TradingClient | null = null;
  */
 export function getTradingClient(): TradingClient {
   if (!tradingClient) {
-    console.log("Initializing nad.fun trading client...");
+    console.log('Initializing nad.fun trading client...');
     tradingClient = new NadFunTradingClient();
   }
   return tradingClient;

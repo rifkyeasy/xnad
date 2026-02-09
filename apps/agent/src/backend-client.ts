@@ -1,15 +1,15 @@
-import type { StrategyConfig } from "./strategy-classifier.js";
-import type { Position } from "./sell-manager.js";
-import type { TargetAllocation } from "./rebalancer.js";
+import type { StrategyConfig } from './strategy-classifier.js';
+import type { Position } from './sell-manager.js';
+import type { TargetAllocation } from './rebalancer.js';
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3001";
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 
 export interface User {
   id: string;
   walletAddress: string;
   vaultAddress: string | null;
   xHandle: string | null;
-  strategyType: "CONSERVATIVE" | "BALANCED" | "AGGRESSIVE";
+  strategyType: 'CONSERVATIVE' | 'BALANCED' | 'AGGRESSIVE';
   confidenceThreshold: number;
   maxTradeAmount: number;
   autoTrade: boolean;
@@ -23,7 +23,7 @@ export interface User {
 export interface TradeRecord {
   tokenAddress: string;
   tokenSymbol: string;
-  action: "BUY" | "SELL";
+  action: 'BUY' | 'SELL';
   amountIn: string;
   amountOut: string;
   priceAtTrade: string;
@@ -40,14 +40,11 @@ export class BackendClient {
     this.baseUrl = baseUrl || BACKEND_URL;
   }
 
-  private async request<T>(
-    path: string,
-    options?: RequestInit
-  ): Promise<T> {
+  private async request<T>(path: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${this.baseUrl}${path}`, {
       ...options,
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         ...options?.headers,
       },
     });
@@ -62,7 +59,7 @@ export class BackendClient {
 
   // Get all active users for agent loop
   async getActiveUsers(): Promise<User[]> {
-    return this.request<User[]>("/api/agent/users");
+    return this.request<User[]>('/api/agent/users');
   }
 
   // Get user by wallet address
@@ -76,8 +73,8 @@ export class BackendClient {
 
   // Create or update user
   async createUser(walletAddress: string, vaultAddress?: string): Promise<User> {
-    return this.request<User>("/api/users", {
-      method: "POST",
+    return this.request<User>('/api/users', {
+      method: 'POST',
       body: JSON.stringify({ walletAddress, vaultAddress }),
     });
   }
@@ -86,7 +83,7 @@ export class BackendClient {
   async updateStrategy(
     walletAddress: string,
     updates: Partial<{
-      strategyType: "CONSERVATIVE" | "BALANCED" | "AGGRESSIVE";
+      strategyType: 'CONSERVATIVE' | 'BALANCED' | 'AGGRESSIVE';
       autoTrade: boolean;
       autoRebalance: boolean;
       rebalanceInterval: number;
@@ -95,7 +92,7 @@ export class BackendClient {
     }>
   ): Promise<User> {
     return this.request<User>(`/api/users/${walletAddress}/strategy`, {
-      method: "PUT",
+      method: 'PUT',
       body: JSON.stringify(updates),
     });
   }
@@ -103,7 +100,7 @@ export class BackendClient {
   // Record a trade
   async recordTrade(walletAddress: string, trade: TradeRecord): Promise<void> {
     await this.request(`/api/trades/${walletAddress}`, {
-      method: "POST",
+      method: 'POST',
       body: JSON.stringify(trade),
     });
   }
@@ -125,10 +122,7 @@ export class BackendClient {
   }
 
   // Get trade history
-  async getTrades(
-    walletAddress: string,
-    limit = 50
-  ): Promise<TradeRecord[]> {
+  async getTrades(walletAddress: string, limit = 50): Promise<TradeRecord[]> {
     return this.request(`/api/trades/${walletAddress}?limit=${limit}`);
   }
 
@@ -149,10 +143,10 @@ export class BackendClient {
   ): Promise<{
     user: User;
     analysis: Record<string, unknown>;
-    recommendedStrategy: "CONSERVATIVE" | "BALANCED" | "AGGRESSIVE";
+    recommendedStrategy: 'CONSERVATIVE' | 'BALANCED' | 'AGGRESSIVE';
   }> {
     return this.request(`/api/users/${walletAddress}/analyze-x`, {
-      method: "POST",
+      method: 'POST',
       body: JSON.stringify({ xHandle }),
     });
   }

@@ -1,5 +1,5 @@
-import { VaultClient, type TradeResult } from "./vault-client.js";
-import type { StrategyConfig } from "./strategy-classifier.js";
+import { VaultClient, type TradeResult } from './vault-client.js';
+import type { StrategyConfig } from './strategy-classifier.js';
 
 export interface Position {
   tokenAddress: string;
@@ -12,7 +12,7 @@ export interface Position {
 }
 
 export interface SellTrigger {
-  type: "stop_loss" | "take_profit" | "manual" | "rebalance";
+  type: 'stop_loss' | 'take_profit' | 'manual' | 'rebalance';
   tokenAddress: string;
   reason: string;
   pnlPercent: number;
@@ -35,16 +35,13 @@ export class SellManager {
   }
 
   // Check if position should be sold based on strategy
-  checkSellTriggers(
-    position: Position,
-    config: StrategyConfig
-  ): SellTrigger | null {
+  checkSellTriggers(position: Position, config: StrategyConfig): SellTrigger | null {
     const pnlPercent = this.calculatePnlPercent(position);
 
     // Stop-loss check
     if (pnlPercent <= -config.stopLossPercent) {
       return {
-        type: "stop_loss",
+        type: 'stop_loss',
         tokenAddress: position.tokenAddress,
         reason: `Stop-loss triggered: ${pnlPercent.toFixed(2)}% loss exceeds -${config.stopLossPercent}% threshold`,
         pnlPercent,
@@ -54,7 +51,7 @@ export class SellManager {
     // Take-profit check
     if (pnlPercent >= config.takeProfitPercent) {
       return {
-        type: "take_profit",
+        type: 'take_profit',
         tokenAddress: position.tokenAddress,
         reason: `Take-profit triggered: ${pnlPercent.toFixed(2)}% gain exceeds ${config.takeProfitPercent}% threshold`,
         pnlPercent,
@@ -76,9 +73,8 @@ export class SellManager {
     console.log(`Amount: ${position.balance} tokens`);
 
     // Calculate min output with 5% slippage for emergency sells
-    const slippage = trigger.type === "stop_loss" ? 10 : 5; // Higher slippage for stop-loss
-    const minOut =
-      (parseFloat(position.currentValue) * (100 - slippage)) / 100;
+    const slippage = trigger.type === 'stop_loss' ? 10 : 5; // Higher slippage for stop-loss
+    const minOut = (parseFloat(position.currentValue) * (100 - slippage)) / 100;
 
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
 

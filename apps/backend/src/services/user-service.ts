@@ -1,6 +1,6 @@
-import { prisma, StrategyType } from "../db/client.js";
-import type { CreateUserInput, UpdateStrategyInput, XAnalysis } from "../types/index.js";
-import { STRATEGY_CONFIGS } from "../types/index.js";
+import { prisma, StrategyType } from '../db/client.js';
+import type { CreateUserInput, UpdateStrategyInput, XAnalysis } from '../types/index.js';
+import { STRATEGY_CONFIGS } from '../types/index.js';
 
 export async function createUser(input: CreateUserInput) {
   return prisma.user.upsert({
@@ -20,7 +20,7 @@ export async function getUser(walletAddress: string) {
     where: { walletAddress },
     include: {
       trades: {
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
         take: 10,
       },
       positions: true,
@@ -34,10 +34,7 @@ export async function getUserByVault(vaultAddress: string) {
   });
 }
 
-export async function updateUserStrategy(
-  walletAddress: string,
-  input: UpdateStrategyInput
-) {
+export async function updateUserStrategy(walletAddress: string, input: UpdateStrategyInput) {
   const data: Record<string, unknown> = {};
 
   if (input.strategyType) {

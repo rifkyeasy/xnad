@@ -3,21 +3,21 @@
  * Shows available tokens and their prices
  */
 
-import { initSDK, formatEther } from "@nadfun/sdk";
-import { ENV } from "./config.js";
+import { initSDK, formatEther } from '@nadfun/sdk';
+import { ENV } from './config.js';
 
 async function main() {
-  console.log("=== nad.fun Token Explorer ===\n");
+  console.log('=== nad.fun Token Explorer ===\n');
 
   if (!ENV.PRIVATE_KEY) {
-    console.error("PRIVATE_KEY not set");
+    console.error('PRIVATE_KEY not set');
     process.exit(1);
   }
 
   const sdk = initSDK({
     rpcUrl: ENV.RPC_URL,
     privateKey: ENV.PRIVATE_KEY as `0x${string}`,
-    network: "testnet",
+    network: 'testnet',
   });
 
   console.log(`Wallet: ${sdk.account.address}`);
@@ -30,10 +30,10 @@ async function main() {
   // List some example tokens (you can add your own)
   const tokens = [
     // The token we just created
-    "0xfDB4DC8BFd39515762Dca9C671701E68F5297777",
+    '0xfDB4DC8BFd39515762Dca9C671701E68F5297777',
   ];
 
-  console.log("--- Token Info ---\n");
+  console.log('--- Token Info ---\n');
 
   for (const token of tokens) {
     try {
@@ -64,14 +64,14 @@ async function main() {
       const tokenBalance = await sdk.getBalance(token as `0x${string}`);
       console.log(`Your Balance: ${formatEther(tokenBalance)}`);
 
-      console.log("");
+      console.log('');
     } catch (error) {
       console.log(`Token ${token}: Error fetching info`);
       console.error(error);
     }
   }
 
-  console.log("--- Fee Config ---");
+  console.log('--- Fee Config ---');
   const fees = await sdk.getFeeConfig();
   console.log(`Deploy Fee: ${formatEther(fees.deployFeeAmount)} MON`);
   console.log(`Graduate Fee: ${formatEther(fees.graduateFeeAmount)} MON`);

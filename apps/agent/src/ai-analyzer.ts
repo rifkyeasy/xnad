@@ -1,18 +1,18 @@
-import OpenAI from "openai";
-import { ENV } from "./config.js";
-import type { Tweet } from "./x-service.js";
+import OpenAI from 'openai';
+import { ENV } from './config.js';
+import type { Tweet } from './x-service.js';
 
 const openai = new OpenAI({
   apiKey: ENV.OPENAI_API_KEY,
 });
 
 export interface TradeSignal {
-  action: "buy" | "sell" | "hold";
+  action: 'buy' | 'sell' | 'hold';
   tokenAddress?: string;
   tokenSymbol?: string;
   confidence: number; // 0-1
   reasoning: string;
-  riskLevel: "low" | "medium" | "high";
+  riskLevel: 'low' | 'medium' | 'high';
   suggestedAmount: string; // in MON
 }
 
@@ -50,7 +50,7 @@ Author Followers: ${tweet.authorFollowers.toLocaleString()}
 Likes: ${tweet.likes}
 Retweets: ${tweet.retweets}
 Views: ${tweet.views}
-URLs in tweet: ${tweet.urls.join(", ") || "none"}
+URLs in tweet: ${tweet.urls.join(', ') || 'none'}
 
 Respond with JSON:
 {
@@ -64,15 +64,15 @@ Respond with JSON:
 }`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: 'gpt-4.1-mini',
       max_tokens: 1024,
       messages: [
         {
-          role: "system",
+          role: 'system',
           content: SYSTEM_PROMPT,
         },
         {
-          role: "user",
+          role: 'user',
           content: userPrompt,
         },
       ],
@@ -81,24 +81,24 @@ Respond with JSON:
     // Extract text from response
     const textContent = response.choices[0]?.message?.content;
     if (!textContent) {
-      throw new Error("No text response from AI");
+      throw new Error('No text response from AI');
     }
 
     // Parse JSON from response
     const jsonMatch = textContent.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error("No JSON found in AI response");
+      throw new Error('No JSON found in AI response');
     }
 
     const signal = JSON.parse(jsonMatch[0]) as TradeSignal;
 
     return {
       tweet,
-      signal: signal.action !== "hold" ? signal : null,
+      signal: signal.action !== 'hold' ? signal : null,
       summary: signal.reasoning,
     };
   } catch (error) {
-    console.error("Error analyzing tweet:", error);
+    console.error('Error analyzing tweet:', error);
     return {
       tweet,
       signal: null,
@@ -129,7 +129,7 @@ export function getActionableSignals(
   return analyses.filter(
     (a) =>
       a.signal &&
-      a.signal.action !== "hold" &&
+      a.signal.action !== 'hold' &&
       a.signal.confidence >= minConfidence &&
       (a.signal.tokenAddress || a.signal.tokenSymbol)
   );
@@ -142,12 +142,12 @@ export interface UserXAnalysis {
   followingCount: number;
   tweetCount: number;
   profileAnalysis: {
-    cryptoExperience: "beginner" | "intermediate" | "advanced";
-    riskTolerance: "low" | "medium" | "high";
-    tradingStyle: "holder" | "swing" | "degen";
+    cryptoExperience: 'beginner' | 'intermediate' | 'advanced';
+    riskTolerance: 'low' | 'medium' | 'high';
+    tradingStyle: 'holder' | 'swing' | 'degen';
     interests: string[];
   };
-  recommendedStrategy: "CONSERVATIVE" | "BALANCED" | "AGGRESSIVE";
+  recommendedStrategy: 'CONSERVATIVE' | 'BALANCED' | 'AGGRESSIVE';
   confidence: number;
   reasoning: string;
 }
@@ -188,27 +188,27 @@ Respond with JSON:
 }`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: 'gpt-4.1-mini',
       max_tokens: 1024,
       messages: [
-        { role: "system", content: USER_ANALYSIS_PROMPT },
-        { role: "user", content: userPrompt },
+        { role: 'system', content: USER_ANALYSIS_PROMPT },
+        { role: 'user', content: userPrompt },
       ],
     });
 
     const textContent = response.choices[0]?.message?.content;
     if (!textContent) {
-      throw new Error("No response from AI");
+      throw new Error('No response from AI');
     }
 
     const jsonMatch = textContent.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error("No JSON in response");
+      throw new Error('No JSON in response');
     }
 
     return JSON.parse(jsonMatch[0]) as UserXAnalysis;
   } catch (error) {
-    console.error("Error analyzing user X:", error);
+    console.error('Error analyzing user X:', error);
     // Return default analysis on error
     return {
       xHandle,
@@ -216,14 +216,14 @@ Respond with JSON:
       followingCount: 0,
       tweetCount: 0,
       profileAnalysis: {
-        cryptoExperience: "beginner",
-        riskTolerance: "low",
-        tradingStyle: "holder",
+        cryptoExperience: 'beginner',
+        riskTolerance: 'low',
+        tradingStyle: 'holder',
         interests: [],
       },
-      recommendedStrategy: "CONSERVATIVE",
+      recommendedStrategy: 'CONSERVATIVE',
       confidence: 0.5,
-      reasoning: "Analysis failed, defaulting to conservative strategy",
+      reasoning: 'Analysis failed, defaulting to conservative strategy',
     };
   }
 }

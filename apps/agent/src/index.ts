@@ -1,7 +1,7 @@
-import { WATCHED_ACCOUNTS, TRADING_CONFIG, ENV } from "./config.js";
-import { getTweets, filterSignalTweets, extractTokenAddresses } from "./x-service.js";
-import { analyzeTweet, getActionableSignals, type TweetAnalysis } from "./ai-analyzer.js";
-import { getTradingClient, type TradingClient, type TradeResult } from "./trading-client.js";
+import { WATCHED_ACCOUNTS, TRADING_CONFIG, ENV } from './config.js';
+import { getTweets, filterSignalTweets, extractTokenAddresses } from './x-service.js';
+import { analyzeTweet, getActionableSignals, type TweetAnalysis } from './ai-analyzer.js';
+import { getTradingClient, type TradingClient, type TradeResult } from './trading-client.js';
 
 // Track processed tweet IDs to avoid duplicates
 const processedTweets = new Set<string>();
@@ -40,7 +40,7 @@ async function fetchAndAnalyzeTweets(): Promise<TweetAnalysis[]> {
         // Extract any token addresses from the tweet
         const addresses = extractTokenAddresses(tweet);
         if (addresses.length > 0) {
-          console.log(`  Found token addresses: ${addresses.join(", ")}`);
+          console.log(`  Found token addresses: ${addresses.join(', ')}`);
         }
 
         // Analyze with AI
@@ -74,7 +74,7 @@ async function executeSignals(
   const actionable = getActionableSignals(analyses, TRADING_CONFIG.minConfidence);
 
   if (actionable.length === 0) {
-    console.log("\nNo actionable signals found");
+    console.log('\nNo actionable signals found');
     return results;
   }
 
@@ -89,13 +89,13 @@ async function executeSignals(
 
     // Execute the trade
     let result: TradeResult;
-    if (analysis.signal.action === "buy") {
+    if (analysis.signal.action === 'buy') {
       result = await client.executeBuy(analysis.signal);
-    } else if (analysis.signal.action === "sell" && analysis.signal.tokenAddress) {
-      const amount = analysis.signal.suggestedAmount || "0";
+    } else if (analysis.signal.action === 'sell' && analysis.signal.tokenAddress) {
+      const amount = analysis.signal.suggestedAmount || '0';
       result = await client.executeSell(analysis.signal.tokenAddress, amount);
     } else {
-      console.log("SKIPPED: Hold signal or missing token address");
+      console.log('SKIPPED: Hold signal or missing token address');
       continue;
     }
 
@@ -116,17 +116,17 @@ async function executeSignals(
 }
 
 async function runAgentLoop(client: TradingClient): Promise<void> {
-  console.log("\n========================================");
-  console.log("  Social-Execution Trading Agent");
-  console.log("  Powered by nad.fun");
-  console.log("========================================");
+  console.log('\n========================================');
+  console.log('  Social-Execution Trading Agent');
+  console.log('  Powered by nad.fun');
+  console.log('========================================');
   console.log(`Wallet: ${client.address}`);
   console.log(`Balance: ${await client.getBalance()} MON`);
-  console.log(`Watching: ${WATCHED_ACCOUNTS.join(", ")}`);
+  console.log(`Watching: ${WATCHED_ACCOUNTS.join(', ')}`);
   console.log(`Poll interval: ${TRADING_CONFIG.pollIntervalMs / 1000}s`);
   console.log(`Min confidence: ${TRADING_CONFIG.minConfidence * 100}%`);
   console.log(`Max buy: ${TRADING_CONFIG.maxBuyAmount} MON`);
-  console.log("========================================\n");
+  console.log('========================================\n');
 
   while (true) {
     try {
@@ -148,7 +148,7 @@ async function runAgentLoop(client: TradingClient): Promise<void> {
       // Wait for next poll
       await new Promise((r) => setTimeout(r, TRADING_CONFIG.pollIntervalMs));
     } catch (error) {
-      console.error("Agent loop error:", error);
+      console.error('Agent loop error:', error);
       // Continue running after errors
       await new Promise((r) => setTimeout(r, 5000));
     }
@@ -159,12 +159,12 @@ async function runAgentLoop(client: TradingClient): Promise<void> {
 function validateEnv(): boolean {
   const missing: string[] = [];
 
-  if (!ENV.OPENAI_API_KEY) missing.push("OPENAI_API_KEY");
-  if (!ENV.X_RAPIDAPI_KEY) missing.push("X_RAPIDAPI_API_KEY");
-  if (!ENV.PRIVATE_KEY) missing.push("PRIVATE_KEY");
+  if (!ENV.OPENAI_API_KEY) missing.push('OPENAI_API_KEY');
+  if (!ENV.X_RAPIDAPI_KEY) missing.push('X_RAPIDAPI_API_KEY');
+  if (!ENV.PRIVATE_KEY) missing.push('PRIVATE_KEY');
 
   if (missing.length > 0) {
-    console.error("Missing required environment variables:");
+    console.error('Missing required environment variables:');
     missing.forEach((v) => console.error(`  - ${v}`));
     return false;
   }
@@ -174,7 +174,7 @@ function validateEnv(): boolean {
 
 // Main entry point
 async function main(): Promise<void> {
-  console.log("Starting Social-Execution Trading Agent...\n");
+  console.log('Starting Social-Execution Trading Agent...\n');
 
   if (!validateEnv()) {
     process.exit(1);
@@ -184,7 +184,7 @@ async function main(): Promise<void> {
     const client = getTradingClient();
     await runAgentLoop(client);
   } catch (error) {
-    console.error("Fatal error:", error);
+    console.error('Fatal error:', error);
     process.exit(1);
   }
 }

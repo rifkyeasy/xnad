@@ -1,5 +1,5 @@
-import { prisma, TradeStatus, TradeAction } from "../db/client.js";
-import type { RecordTradeInput } from "../types/index.js";
+import { prisma, TradeStatus, TradeAction } from '../db/client.js';
+import type { RecordTradeInput } from '../types/index.js';
 
 export async function recordTrade(userId: string, input: RecordTradeInput) {
   return prisma.trade.create({
@@ -38,24 +38,16 @@ export async function updateTradeStatus(
   });
 }
 
-export async function getUserTrades(
-  userId: string,
-  limit = 50,
-  offset = 0
-) {
+export async function getUserTrades(userId: string, limit = 50, offset = 0) {
   return prisma.trade.findMany({
     where: { userId },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     take: limit,
     skip: offset,
   });
 }
 
-export async function getTradesByWallet(
-  walletAddress: string,
-  limit = 50,
-  offset = 0
-) {
+export async function getTradesByWallet(walletAddress: string, limit = 50, offset = 0) {
   const user = await prisma.user.findUnique({
     where: { walletAddress },
   });
@@ -69,7 +61,7 @@ export async function getPendingTrades() {
   return prisma.trade.findMany({
     where: { status: TradeStatus.PENDING },
     include: { user: true },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: 'asc' },
   });
 }
 
@@ -88,8 +80,7 @@ export async function getTradeStats(userId: string) {
     totalTrades: trades.length,
     buyCount: buyTrades.length,
     sellCount: sellTrades.length,
-    avgConfidence: trades.length > 0
-      ? trades.reduce((sum, t) => sum + t.confidence, 0) / trades.length
-      : 0,
+    avgConfidence:
+      trades.length > 0 ? trades.reduce((sum, t) => sum + t.confidence, 0) / trades.length : 0,
   };
 }

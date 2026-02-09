@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 // X Analysis result schema
 export const XAnalysisSchema = z.object({
@@ -8,8 +8,8 @@ export const XAnalysisSchema = z.object({
   accountAge: z.number(), // days
   cryptoMentionRate: z.number(), // 0-1
   engagementRate: z.number(),
-  riskTolerance: z.enum(["low", "medium", "high"]),
-  tradingExperience: z.enum(["beginner", "intermediate", "advanced"]),
+  riskTolerance: z.enum(['low', 'medium', 'high']),
+  tradingExperience: z.enum(['beginner', 'intermediate', 'advanced']),
   interests: z.array(z.string()),
   reasoning: z.string().optional(),
 });
@@ -18,10 +18,10 @@ export type XAnalysis = z.infer<typeof XAnalysisSchema>;
 
 // Strategy config
 export interface StrategyConfig {
-  type: "CONSERVATIVE" | "BALANCED" | "AGGRESSIVE";
+  type: 'CONSERVATIVE' | 'BALANCED' | 'AGGRESSIVE';
   minConfidence: number;
   maxTradeAmount: string;
-  allowedRiskLevels: ("LOW" | "MEDIUM" | "HIGH")[];
+  allowedRiskLevels: ('LOW' | 'MEDIUM' | 'HIGH')[];
   tokenCriteria: {
     minMarketCap?: string;
     minHolders?: number;
@@ -35,12 +35,12 @@ export interface StrategyConfig {
 
 export const STRATEGY_CONFIGS: Record<string, StrategyConfig> = {
   CONSERVATIVE: {
-    type: "CONSERVATIVE",
+    type: 'CONSERVATIVE',
     minConfidence: 0.85,
-    maxTradeAmount: "0.01",
-    allowedRiskLevels: ["LOW"],
+    maxTradeAmount: '0.01',
+    allowedRiskLevels: ['LOW'],
     tokenCriteria: {
-      minMarketCap: "10",
+      minMarketCap: '10',
       minHolders: 50,
       minAge: 48,
       graduationProgress: 30,
@@ -50,12 +50,12 @@ export const STRATEGY_CONFIGS: Record<string, StrategyConfig> = {
     takeProfitPercent: 30,
   },
   BALANCED: {
-    type: "BALANCED",
+    type: 'BALANCED',
     minConfidence: 0.7,
-    maxTradeAmount: "0.05",
-    allowedRiskLevels: ["LOW", "MEDIUM"],
+    maxTradeAmount: '0.05',
+    allowedRiskLevels: ['LOW', 'MEDIUM'],
     tokenCriteria: {
-      minMarketCap: "5",
+      minMarketCap: '5',
       minHolders: 20,
       minAge: 12,
       graduationProgress: 15,
@@ -65,10 +65,10 @@ export const STRATEGY_CONFIGS: Record<string, StrategyConfig> = {
     takeProfitPercent: 50,
   },
   AGGRESSIVE: {
-    type: "AGGRESSIVE",
+    type: 'AGGRESSIVE',
     minConfidence: 0.5,
-    maxTradeAmount: "0.1",
-    allowedRiskLevels: ["LOW", "MEDIUM", "HIGH"],
+    maxTradeAmount: '0.1',
+    allowedRiskLevels: ['LOW', 'MEDIUM', 'HIGH'],
     tokenCriteria: {
       minHolders: 5,
       minAge: 1,
@@ -82,11 +82,14 @@ export const STRATEGY_CONFIGS: Record<string, StrategyConfig> = {
 // API request/response schemas
 export const CreateUserSchema = z.object({
   walletAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
-  vaultAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/).optional(),
+  vaultAddress: z
+    .string()
+    .regex(/^0x[a-fA-F0-9]{40}$/)
+    .optional(),
 });
 
 export const UpdateStrategySchema = z.object({
-  strategyType: z.enum(["CONSERVATIVE", "BALANCED", "AGGRESSIVE"]).optional(),
+  strategyType: z.enum(['CONSERVATIVE', 'BALANCED', 'AGGRESSIVE']).optional(),
   autoTrade: z.boolean().optional(),
   autoRebalance: z.boolean().optional(),
   rebalanceInterval: z.number().min(1).max(168).optional(),
@@ -101,7 +104,7 @@ export const AnalyzeXSchema = z.object({
 export const RecordTradeSchema = z.object({
   tokenAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
   tokenSymbol: z.string(),
-  action: z.enum(["BUY", "SELL"]),
+  action: z.enum(['BUY', 'SELL']),
   amountIn: z.string(),
   amountOut: z.string(),
   priceAtTrade: z.string(),

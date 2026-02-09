@@ -1,7 +1,7 @@
-import { serve } from "@hono/node-server";
-import app from "./server.js";
+import { serve } from '@hono/node-server';
+import app from './server.js';
 
-const port = parseInt(process.env.PORT || "3001");
+const port = parseInt(process.env.PORT || '3001');
 
 console.log(`Starting backend server on port ${port}...`);
 

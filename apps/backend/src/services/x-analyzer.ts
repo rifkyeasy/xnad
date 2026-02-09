@@ -1,8 +1,8 @@
-import OpenAI from "openai";
-import { StrategyType } from "../db/client.js";
-import type { XAnalysis } from "../types/index.js";
+import OpenAI from 'openai';
+import { StrategyType } from '../db/client.js';
+import type { XAnalysis } from '../types/index.js';
 
-const USE_MOCK_DATA = process.env.USE_MOCK_DATA === "true";
+const USE_MOCK_DATA = process.env.USE_MOCK_DATA === 'true';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -17,31 +17,28 @@ interface Tweet {
 // Fetch tweets from X/Twitter
 async function fetchTweets(xHandle: string): Promise<Tweet[]> {
   // Get profile ID first
-  const profileRes = await fetch(
-    `https://tweethunter.io/api/convert2?inputString=${xHandle}`,
-    {
-      headers: {
-        accept: "*/*",
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-      },
-    }
-  );
+  const profileRes = await fetch(`https://tweethunter.io/api/convert2?inputString=${xHandle}`, {
+    headers: {
+      accept: '*/*',
+      'sec-fetch-dest': 'empty',
+      'sec-fetch-mode': 'cors',
+    },
+  });
 
   if (!profileRes.ok) {
     throw new Error(`Failed to get profile for ${xHandle}`);
   }
 
-  const profile = await profileRes.json() as { userId: string };
+  const profile = (await profileRes.json()) as { userId: string };
 
   // Fetch tweets
   const tweetsRes = await fetch(
     `https://twitter241.p.rapidapi.com/user-tweets?user=${profile.userId}&count=20`,
     {
-      method: "GET",
+      method: 'GET',
       headers: {
-        "x-rapidapi-key": process.env.X_RAPIDAPI_API_KEY || "",
-        "x-rapidapi-host": "twitter241.p.rapidapi.com",
+        'x-rapidapi-key': process.env.X_RAPIDAPI_API_KEY || '',
+        'x-rapidapi-host': 'twitter241.p.rapidapi.com',
       },
     }
   );
@@ -75,12 +72,12 @@ async function fetchTweets(xHandle: string): Promise<Tweet[]> {
     };
   }
 
-  const data = await tweetsRes.json() as TweetResponse;
+  const data = (await tweetsRes.json()) as TweetResponse;
   const tweets: Tweet[] = [];
 
   const instructions = data.result?.timeline?.instructions || [];
   for (const instruction of instructions) {
-    if (instruction.type !== "TimelineAddEntries") continue;
+    if (instruction.type !== 'TimelineAddEntries') continue;
 
     for (const entry of instruction.entries || []) {
       const tweetResult = entry.content?.itemContent?.tweet_results?.result;
@@ -116,11 +113,11 @@ function classifyStrategy(analysis: XAnalysis): StrategyType {
   if (analysis.engagementRate > 0.05) riskScore += 1;
 
   // Direct indicators
-  if (analysis.riskTolerance === "high") riskScore += 2;
-  else if (analysis.riskTolerance === "low") riskScore -= 2;
+  if (analysis.riskTolerance === 'high') riskScore += 2;
+  else if (analysis.riskTolerance === 'low') riskScore -= 2;
 
-  if (analysis.tradingExperience === "advanced") riskScore += 1;
-  else if (analysis.tradingExperience === "beginner") riskScore -= 1;
+  if (analysis.tradingExperience === 'advanced') riskScore += 1;
+  else if (analysis.tradingExperience === 'beginner') riskScore -= 1;
 
   // Classify
   if (riskScore >= 3) return StrategyType.AGGRESSIVE;
@@ -129,9 +126,12 @@ function classifyStrategy(analysis: XAnalysis): StrategyType {
 }
 
 // Generate mock X analysis based on handle
-function getMockAnalysis(xHandle: string): { analysis: XAnalysis; recommendedStrategy: StrategyType } {
+function getMockAnalysis(xHandle: string): {
+  analysis: XAnalysis;
+  recommendedStrategy: StrategyType;
+} {
   // Generate deterministic mock data based on handle
-  const hash = xHandle.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const hash = xHandle.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const variant = hash % 3;
 
   const mockAnalyses: Array<{ analysis: XAnalysis; recommendedStrategy: StrategyType }> = [
@@ -143,10 +143,11 @@ function getMockAnalysis(xHandle: string): { analysis: XAnalysis; recommendedStr
         accountAge: 730,
         cryptoMentionRate: 0.15,
         engagementRate: 0.02,
-        riskTolerance: "low",
-        tradingExperience: "beginner",
-        interests: ["DeFi", "NFTs", "Community", "Monad"],
-        reasoning: "Your profile shows cautious engagement with crypto. You prefer established projects and long-term holds. Conservative strategy recommended for steady growth.",
+        riskTolerance: 'low',
+        tradingExperience: 'beginner',
+        interests: ['DeFi', 'NFTs', 'Community', 'Monad'],
+        reasoning:
+          'Your profile shows cautious engagement with crypto. You prefer established projects and long-term holds. Conservative strategy recommended for steady growth.',
       },
       recommendedStrategy: StrategyType.CONSERVATIVE,
     },
@@ -158,10 +159,11 @@ function getMockAnalysis(xHandle: string): { analysis: XAnalysis; recommendedStr
         accountAge: 540,
         cryptoMentionRate: 0.35,
         engagementRate: 0.04,
-        riskTolerance: "medium",
-        tradingExperience: "intermediate",
-        interests: ["Trading", "Memecoins", "Monad", "DeFi"],
-        reasoning: "Your profile shows active crypto engagement with balanced approach. You follow trends but maintain some caution. Balanced strategy recommended for growth with managed risk.",
+        riskTolerance: 'medium',
+        tradingExperience: 'intermediate',
+        interests: ['Trading', 'Memecoins', 'Monad', 'DeFi'],
+        reasoning:
+          'Your profile shows active crypto engagement with balanced approach. You follow trends but maintain some caution. Balanced strategy recommended for growth with managed risk.',
       },
       recommendedStrategy: StrategyType.BALANCED,
     },
@@ -173,10 +175,11 @@ function getMockAnalysis(xHandle: string): { analysis: XAnalysis; recommendedStr
         accountAge: 1095,
         cryptoMentionRate: 0.65,
         engagementRate: 0.08,
-        riskTolerance: "high",
-        tradingExperience: "advanced",
-        interests: ["Degen Plays", "New Launches", "High Risk", "Monad"],
-        reasoning: "Your profile shows degen energy with high activity in new launches. You're comfortable with volatility and chase high returns. Aggressive strategy recommended for maximum upside.",
+        riskTolerance: 'high',
+        tradingExperience: 'advanced',
+        interests: ['Degen Plays', 'New Launches', 'High Risk', 'Monad'],
+        reasoning:
+          "Your profile shows degen energy with high activity in new launches. You're comfortable with volatility and chase high returns. Aggressive strategy recommended for maximum upside.",
       },
       recommendedStrategy: StrategyType.AGGRESSIVE,
     },
@@ -200,7 +203,7 @@ export async function analyzeXAccount(
   const tweets = await fetchTweets(xHandle);
 
   if (tweets.length === 0) {
-    throw new Error("No tweets found for this account");
+    throw new Error('No tweets found for this account');
   }
 
   // Use AI to analyze the profile
@@ -211,7 +214,7 @@ Recent Tweets (${tweets.length}):
 ${tweets
   .slice(0, 10)
   .map((t) => `- ${t.text.substring(0, 200)}`)
-  .join("\n")}
+  .join('\n')}
 
 Analyze and return JSON only:
 {
@@ -228,16 +231,16 @@ Analyze and return JSON only:
 }`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4.1-mini",
+    model: 'gpt-4.1-mini',
     max_tokens: 1024,
     messages: [
       {
-        role: "system",
+        role: 'system',
         content:
-          "You analyze social media profiles for crypto trading risk assessment. Return only valid JSON.",
+          'You analyze social media profiles for crypto trading risk assessment. Return only valid JSON.',
       },
       {
-        role: "user",
+        role: 'user',
         content: prompt,
       },
     ],
@@ -245,13 +248,13 @@ Analyze and return JSON only:
 
   const content = response.choices[0]?.message?.content;
   if (!content) {
-    throw new Error("No response from AI");
+    throw new Error('No response from AI');
   }
 
   // Parse JSON from response
   const jsonMatch = content.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error("No JSON found in AI response");
+    throw new Error('No JSON found in AI response');
   }
 
   const analysis = JSON.parse(jsonMatch[0]) as XAnalysis;

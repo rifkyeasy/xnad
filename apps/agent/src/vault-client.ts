@@ -5,15 +5,15 @@ import {
   parseEther,
   formatEther,
   type Address,
-} from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { ENV, NADFUN_CONTRACTS, VAULT_CONTRACTS } from "./config.js";
+} from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { ENV, NADFUN_CONTRACTS, VAULT_CONTRACTS } from './config.js';
 
 // Monad testnet chain
 const monadTestnet = {
   id: 10143,
-  name: "Monad Testnet",
-  nativeCurrency: { decimals: 18, name: "Monad", symbol: "MON" },
+  name: 'Monad Testnet',
+  nativeCurrency: { decimals: 18, name: 'Monad', symbol: 'MON' },
   rpcUrls: { default: { http: [ENV.RPC_URL] } },
 };
 
@@ -21,110 +21,110 @@ const monadTestnet = {
 const userVaultAbi = [
   {
     inputs: [],
-    name: "owner",
-    outputs: [{ name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function",
+    name: 'owner',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
     inputs: [],
-    name: "agent",
-    outputs: [{ name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function",
+    name: 'agent',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
     inputs: [],
-    name: "paused",
-    outputs: [{ name: "", type: "bool" }],
-    stateMutability: "view",
-    type: "function",
+    name: 'paused',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
     inputs: [],
-    name: "strategyType",
-    outputs: [{ name: "", type: "uint8" }],
-    stateMutability: "view",
-    type: "function",
+    name: 'strategyType',
+    outputs: [{ name: '', type: 'uint8' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
     inputs: [],
-    name: "maxTradeAmount",
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
+    name: 'maxTradeAmount',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
     inputs: [],
-    name: "getBalance",
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
+    name: 'getBalance',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
-    inputs: [{ name: "token", type: "address" }],
-    name: "getTokenBalance",
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
+    inputs: [{ name: 'token', type: 'address' }],
+    name: 'getTokenBalance',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
     inputs: [
-      { name: "router", type: "address" },
-      { name: "token", type: "address" },
-      { name: "amountIn", type: "uint256" },
-      { name: "minAmountOut", type: "uint256" },
-      { name: "deadline", type: "uint256" },
+      { name: 'router', type: 'address' },
+      { name: 'token', type: 'address' },
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'minAmountOut', type: 'uint256' },
+      { name: 'deadline', type: 'uint256' },
     ],
-    name: "executeBuy",
-    outputs: [{ name: "amountOut", type: "uint256" }],
-    stateMutability: "nonpayable",
-    type: "function",
+    name: 'executeBuy',
+    outputs: [{ name: 'amountOut', type: 'uint256' }],
+    stateMutability: 'nonpayable',
+    type: 'function',
   },
   {
     inputs: [
-      { name: "router", type: "address" },
-      { name: "token", type: "address" },
-      { name: "tokenAmount", type: "uint256" },
-      { name: "minAmountOut", type: "uint256" },
-      { name: "deadline", type: "uint256" },
+      { name: 'router', type: 'address' },
+      { name: 'token', type: 'address' },
+      { name: 'tokenAmount', type: 'uint256' },
+      { name: 'minAmountOut', type: 'uint256' },
+      { name: 'deadline', type: 'uint256' },
     ],
-    name: "executeSell",
-    outputs: [{ name: "amountOut", type: "uint256" }],
-    stateMutability: "nonpayable",
-    type: "function",
+    name: 'executeSell',
+    outputs: [{ name: 'amountOut', type: 'uint256' }],
+    stateMutability: 'nonpayable',
+    type: 'function',
   },
 ] as const;
 
 // VaultFactory ABI
 const vaultFactoryAbi = [
   {
-    inputs: [{ name: "user", type: "address" }],
-    name: "getVault",
-    outputs: [{ name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function",
+    inputs: [{ name: 'user', type: 'address' }],
+    name: 'getVault',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
-    inputs: [{ name: "user", type: "address" }],
-    name: "hasVault",
-    outputs: [{ name: "", type: "bool" }],
-    stateMutability: "view",
-    type: "function",
+    inputs: [{ name: 'user', type: 'address' }],
+    name: 'hasVault',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
     inputs: [],
-    name: "totalVaults",
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
+    name: 'totalVaults',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
-    inputs: [{ name: "index", type: "uint256" }],
-    name: "getVaultAt",
-    outputs: [{ name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function",
+    inputs: [{ name: 'index', type: 'uint256' }],
+    name: 'getVaultAt',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
   },
 ] as const;
 
@@ -153,7 +153,7 @@ export class VaultClient {
 
   constructor(factoryAddress: string) {
     if (!ENV.PRIVATE_KEY) {
-      throw new Error("PRIVATE_KEY not set in environment");
+      throw new Error('PRIVATE_KEY not set in environment');
     }
 
     this.account = privateKeyToAccount(ENV.PRIVATE_KEY as `0x${string}`);
@@ -181,10 +181,10 @@ export class VaultClient {
       const vault = await this.publicClient.readContract({
         address: this.factoryAddress as Address,
         abi: vaultFactoryAbi,
-        functionName: "getVault",
+        functionName: 'getVault',
         args: [userAddress as Address],
       });
-      return vault === "0x0000000000000000000000000000000000000000" ? null : vault;
+      return vault === '0x0000000000000000000000000000000000000000' ? null : vault;
     } catch {
       return null;
     }
@@ -193,39 +193,38 @@ export class VaultClient {
   // Get vault info
   async getVaultInfo(vaultAddress: string): Promise<VaultInfo | null> {
     try {
-      const [owner, agent, balance, paused, strategyType, maxTradeAmount] =
-        await Promise.all([
-          this.publicClient.readContract({
-            address: vaultAddress as Address,
-            abi: userVaultAbi,
-            functionName: "owner",
-          }),
-          this.publicClient.readContract({
-            address: vaultAddress as Address,
-            abi: userVaultAbi,
-            functionName: "agent",
-          }),
-          this.publicClient.readContract({
-            address: vaultAddress as Address,
-            abi: userVaultAbi,
-            functionName: "getBalance",
-          }),
-          this.publicClient.readContract({
-            address: vaultAddress as Address,
-            abi: userVaultAbi,
-            functionName: "paused",
-          }),
-          this.publicClient.readContract({
-            address: vaultAddress as Address,
-            abi: userVaultAbi,
-            functionName: "strategyType",
-          }),
-          this.publicClient.readContract({
-            address: vaultAddress as Address,
-            abi: userVaultAbi,
-            functionName: "maxTradeAmount",
-          }),
-        ]);
+      const [owner, agent, balance, paused, strategyType, maxTradeAmount] = await Promise.all([
+        this.publicClient.readContract({
+          address: vaultAddress as Address,
+          abi: userVaultAbi,
+          functionName: 'owner',
+        }),
+        this.publicClient.readContract({
+          address: vaultAddress as Address,
+          abi: userVaultAbi,
+          functionName: 'agent',
+        }),
+        this.publicClient.readContract({
+          address: vaultAddress as Address,
+          abi: userVaultAbi,
+          functionName: 'getBalance',
+        }),
+        this.publicClient.readContract({
+          address: vaultAddress as Address,
+          abi: userVaultAbi,
+          functionName: 'paused',
+        }),
+        this.publicClient.readContract({
+          address: vaultAddress as Address,
+          abi: userVaultAbi,
+          functionName: 'strategyType',
+        }),
+        this.publicClient.readContract({
+          address: vaultAddress as Address,
+          abi: userVaultAbi,
+          functionName: 'maxTradeAmount',
+        }),
+      ]);
 
       return {
         address: vaultAddress,
@@ -237,26 +236,23 @@ export class VaultClient {
         maxTradeAmount: formatEther(maxTradeAmount),
       };
     } catch (error) {
-      console.error("Error getting vault info:", error);
+      console.error('Error getting vault info:', error);
       return null;
     }
   }
 
   // Get token balance in vault
-  async getVaultTokenBalance(
-    vaultAddress: string,
-    tokenAddress: string
-  ): Promise<string> {
+  async getVaultTokenBalance(vaultAddress: string, tokenAddress: string): Promise<string> {
     try {
       const balance = await this.publicClient.readContract({
         address: vaultAddress as Address,
         abi: userVaultAbi,
-        functionName: "getTokenBalance",
+        functionName: 'getTokenBalance',
         args: [tokenAddress as Address],
       });
       return formatEther(balance);
     } catch {
-      return "0";
+      return '0';
     }
   }
 
@@ -272,7 +268,7 @@ export class VaultClient {
       const hash = await this.walletClient.writeContract({
         address: vaultAddress as Address,
         abi: userVaultAbi,
-        functionName: "executeBuy",
+        functionName: 'executeBuy',
         args: [
           NADFUN_CONTRACTS.bondingCurveRouter as Address,
           tokenAddress as Address,
@@ -287,7 +283,7 @@ export class VaultClient {
       // Wait for confirmation
       const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
 
-      if (receipt.status === "success") {
+      if (receipt.status === 'success') {
         return {
           success: true,
           txHash: hash,
@@ -296,13 +292,13 @@ export class VaultClient {
         return {
           success: false,
           txHash: hash,
-          error: "Transaction reverted",
+          error: 'Transaction reverted',
         };
       }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -319,7 +315,7 @@ export class VaultClient {
       const hash = await this.walletClient.writeContract({
         address: vaultAddress as Address,
         abi: userVaultAbi,
-        functionName: "executeSell",
+        functionName: 'executeSell',
         args: [
           NADFUN_CONTRACTS.bondingCurveRouter as Address,
           tokenAddress as Address,
@@ -334,7 +330,7 @@ export class VaultClient {
       // Wait for confirmation
       const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
 
-      if (receipt.status === "success") {
+      if (receipt.status === 'success') {
         return {
           success: true,
           txHash: hash,
@@ -343,13 +339,13 @@ export class VaultClient {
         return {
           success: false,
           txHash: hash,
-          error: "Transaction reverted",
+          error: 'Transaction reverted',
         };
       }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -360,7 +356,7 @@ export class VaultClient {
       const totalVaults = await this.publicClient.readContract({
         address: this.factoryAddress as Address,
         abi: vaultFactoryAbi,
-        functionName: "totalVaults",
+        functionName: 'totalVaults',
       });
 
       const vaults: string[] = [];
@@ -368,7 +364,7 @@ export class VaultClient {
         const vault = await this.publicClient.readContract({
           address: this.factoryAddress as Address,
           abi: vaultFactoryAbi,
-          functionName: "getVaultAt",
+          functionName: 'getVaultAt',
           args: [i],
         });
         vaults.push(vault);

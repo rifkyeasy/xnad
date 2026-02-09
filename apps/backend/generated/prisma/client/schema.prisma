@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User profile and settings
+model User {
+  id            String  @id @default(cuid())
+  walletAddress String  @unique
+  vaultAddress  String?
+
+  // X/Twitter integration
+  xHandle   String?
+  xUserId   String?
+  xAnalysis Json? // Stored analysis results
+
+  // Strategy settings
+  strategyType        StrategyType @default(BALANCED)
+  confidenceThreshold Float        @default(0.7)
+  maxTradeAmount      Float        @default(0.05)
+
+  // Automation settings
+  autoTrade         Boolean @default(false)
+  autoRebalance     Boolean @default(false)
+  rebalanceInterval Int     @default(24) // hours
+  stopLossPercent   Float?
+  takeProfitPercent Float?
+
+  // Risk profile from X analysis
+  riskProfile String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trades      Trade[]
+  positions   Position[]
+  performance StrategyPerformance[]
+}
+
+enum StrategyType {
+  CONSERVATIVE
+  BALANCED
+  AGGRESSIVE
+}
+
+// Individual trade records
+model Trade {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tokenAddress String
+  tokenSymbol  String
+  action       TradeAction
+
+  // Amounts (stored as strings for precision)
+  amountIn     String
+  amountOut    String
+  priceAtTrade String
+
+  // Signal info
+  confidence   Float
+  signalSource String? // "x_analysis", "rebalance", "stop_loss", "take_profit"
+  reasoning    String?
+
+  // Transaction
+  txHash String?
+  status TradeStatus @default(PENDING)
+  error  String?
+
+  createdAt  DateTime  @default(now())
+  executedAt DateTime?
+
+  @@index([userId])
+  @@index([tokenAddress])
+  @@index([status])
+}
+
+enum TradeAction {
+  BUY
+  SELL
+}
+
+enum TradeStatus {
+  PENDING
+  EXECUTING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+// Current token positions
+model Position {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tokenAddress String
+  tokenSymbol  String
+
+  // Holdings
+  balance    String // Token balance
+  costBasis  String // Total MON spent
+  entryPrice String // Average entry price
+
+  // Current values
+  currentPrice String
+  currentValue String
+
+  // P&L
+  unrealizedPnl    String
+  unrealizedPnlPct Float
+
+  // Rebalancing
+  targetAllocation Float? // Target % of portfolio
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, tokenAddress])
+  @@index([userId])
+}
+
+// Strategy performance tracking
+model StrategyPerformance {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  strategyType StrategyType
+
+  periodStart DateTime
+  periodEnd   DateTime
+
+  tradesCount Int
+  winCount    Int
+  lossCount   Int
+  winRate     Float
+
+  totalPnl    String
+  totalPnlPct Float
+
+  bestTrade    String?
+  worstTrade   String?
+  avgTradeSize String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([strategyType])
+}
+
+// Token whitelist for conservative strategies
+model TokenWhitelist {
+  id           String    @id @default(cuid())
+  tokenAddress String    @unique
+  tokenSymbol  String
+  riskLevel    RiskLevel
+
+  minMarketCap String?
+  verified     Boolean @default(false)
+  notes        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// Agent execution log
+model AgentLog {
+  id     String  @id @default(cuid())
+  userId String?
+
+  action  String // "analyze", "trade", "rebalance", etc.
+  details Json?
+
+  success Boolean
+  error   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+}

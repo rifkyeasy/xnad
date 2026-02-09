@@ -1,4 +1,4 @@
-import { ENV, SIGNAL_KEYWORDS } from "./config.js";
+import { ENV, SIGNAL_KEYWORDS } from './config.js';
 
 export interface Tweet {
   id: string;
@@ -20,22 +20,19 @@ interface ProfileResponse {
 
 // Get X user profile (username -> userId)
 async function getProfile(username: string): Promise<ProfileResponse> {
-  const res = await fetch(
-    `https://tweethunter.io/api/convert2?inputString=${username}`,
-    {
-      headers: {
-        accept: "*/*",
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-      },
-    }
-  );
+  const res = await fetch(`https://tweethunter.io/api/convert2?inputString=${username}`, {
+    headers: {
+      accept: '*/*',
+      'sec-fetch-dest': 'empty',
+      'sec-fetch-mode': 'cors',
+    },
+  });
 
   if (!res.ok) {
     throw new Error(`Failed to get profile for ${username}`);
   }
 
-  const data = await res.json() as { userId: string; username: string };
+  const data = (await res.json()) as { userId: string; username: string };
   return {
     userId: data.userId,
     username: data.username,
@@ -50,10 +47,10 @@ export async function getTweets(username: string): Promise<Tweet[]> {
     const res = await fetch(
       `https://twitter241.p.rapidapi.com/user-tweets?user=${profile.userId}&count=20`,
       {
-        method: "GET",
+        method: 'GET',
         headers: {
-          "x-rapidapi-key": ENV.X_RAPIDAPI_KEY,
-          "x-rapidapi-host": "twitter241.p.rapidapi.com",
+          'x-rapidapi-key': ENV.X_RAPIDAPI_KEY,
+          'x-rapidapi-host': 'twitter241.p.rapidapi.com',
         },
       }
     );
@@ -62,7 +59,7 @@ export async function getTweets(username: string): Promise<Tweet[]> {
       throw new Error(`Failed to fetch tweets for ${username}`);
     }
 
-    const data = await res.json() as {
+    const data = (await res.json()) as {
       result?: {
         timeline?: {
           instructions?: Array<{
@@ -101,7 +98,7 @@ export async function getTweets(username: string): Promise<Tweet[]> {
     // Parse tweets from the response
     const instructions = data.result?.timeline?.instructions || [];
     for (const instruction of instructions) {
-      if (instruction.type !== "TimelineAddEntries") continue;
+      if (instruction.type !== 'TimelineAddEntries') continue;
 
       for (const entry of instruction.entries || []) {
         const tweetResult = entry.content?.itemContent?.tweet_results?.result;
@@ -125,7 +122,7 @@ export async function getTweets(username: string): Promise<Tweet[]> {
           likes: legacy.favorite_count,
           retweets: legacy.retweet_count,
           replies: legacy.reply_count,
-          views: parseInt(tweetResult.views?.count || "0"),
+          views: parseInt(tweetResult.views?.count || '0'),
           urls,
         });
       }
@@ -175,5 +172,5 @@ export function extractTokenAddresses(tweet: Tweet): string[] {
 export function extractTokenSymbols(tweet: Tweet): string[] {
   const symbolRegex = /\$([A-Za-z]{2,10})/g;
   const matches = tweet.text.match(symbolRegex) || [];
-  return matches.map((s) => s.replace("$", "").toUpperCase());
+  return matches.map((s) => s.replace('$', '').toUpperCase());
 }

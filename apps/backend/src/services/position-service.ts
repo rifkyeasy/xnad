@@ -1,4 +1,4 @@
-import { prisma } from "../db/client.js";
+import { prisma } from '../db/client.js';
 
 export interface PositionUpdate {
   tokenAddress: string;
@@ -50,7 +50,7 @@ export async function upsertPosition(userId: string, data: PositionUpdate) {
 export async function getUserPositions(userId: string) {
   return prisma.position.findMany({
     where: { userId },
-    orderBy: { currentValue: "desc" },
+    orderBy: { currentValue: 'desc' },
   });
 }
 
@@ -78,15 +78,9 @@ export async function deletePosition(userId: string, tokenAddress: string) {
 export async function getPortfolioValue(userId: string) {
   const positions = await getUserPositions(userId);
 
-  const totalValue = positions.reduce(
-    (sum, p) => sum + parseFloat(p.currentValue),
-    0
-  );
+  const totalValue = positions.reduce((sum, p) => sum + parseFloat(p.currentValue), 0);
 
-  const totalCostBasis = positions.reduce(
-    (sum, p) => sum + parseFloat(p.costBasis),
-    0
-  );
+  const totalCostBasis = positions.reduce((sum, p) => sum + parseFloat(p.costBasis), 0);
 
   const totalPnl = totalValue - totalCostBasis;
   const totalPnlPct = totalCostBasis > 0 ? (totalPnl / totalCostBasis) * 100 : 0;
