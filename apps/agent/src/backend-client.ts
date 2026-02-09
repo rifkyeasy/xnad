@@ -57,7 +57,7 @@ export class BackendClient {
       throw new Error(`Backend error (${response.status}): ${error}`);
     }
 
-    return response.json();
+    return response.json() as Promise<T>;
   }
 
   // Get all active users for agent loop

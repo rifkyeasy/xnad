@@ -1,15 +1,22 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient, StrategyType, TradeAction, TradeStatus, RiskLevel } from "../../generated/prisma/client/index.js";
+import type { User, Trade, Position, StrategyPerformance } from "../../generated/prisma/client/index.js";
 
-declare global {
-  // eslint-disable-next-line no-var
-  var prisma: PrismaClient | undefined;
-}
+const adapter = new PrismaPg({ connectionString: process.env["DATABASE_URL"]! });
 
-export const prisma = globalThis.prisma || new PrismaClient();
+const prismaClientSingleton = () => {
+  return new PrismaClient({ adapter });
+};
 
-if (process.env.NODE_ENV !== "production") {
-  globalThis.prisma = prisma;
-}
+type PrismaClientSingleton = ReturnType<typeof prismaClientSingleton>;
 
-export type { User, Trade, Position, StrategyPerformance } from "@prisma/client";
-export { StrategyType, TradeAction, TradeStatus, RiskLevel } from "@prisma/client";
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClientSingleton | undefined;
+};
+
+export const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
+export type { User, Trade, Position, StrategyPerformance };
+export { StrategyType, TradeAction, TradeStatus, RiskLevel };

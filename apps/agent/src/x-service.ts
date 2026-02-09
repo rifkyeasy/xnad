@@ -35,7 +35,7 @@ async function getProfile(username: string): Promise<ProfileResponse> {
     throw new Error(`Failed to get profile for ${username}`);
   }
 
-  const data = await res.json();
+  const data = await res.json() as { userId: string; username: string };
   return {
     userId: data.userId,
     username: data.username,
@@ -62,7 +62,40 @@ export async function getTweets(username: string): Promise<Tweet[]> {
       throw new Error(`Failed to fetch tweets for ${username}`);
     }
 
-    const data = await res.json();
+    const data = await res.json() as {
+      result?: {
+        timeline?: {
+          instructions?: Array<{
+            type: string;
+            entries?: Array<{
+              content?: {
+                itemContent?: {
+                  tweet_results?: {
+                    result?: {
+                      legacy?: {
+                        id_str: string;
+                        full_text: string;
+                        created_at: string;
+                        favorite_count: number;
+                        retweet_count: number;
+                        reply_count: number;
+                        entities?: { urls?: Array<{ expanded_url: string }> };
+                      };
+                      core?: {
+                        user_results?: {
+                          result?: { legacy?: { followers_count: number } };
+                        };
+                      };
+                      views?: { count: string };
+                    };
+                  };
+                };
+              };
+            }>;
+          }>;
+        };
+      };
+    };
     const tweets: Tweet[] = [];
 
     // Parse tweets from the response

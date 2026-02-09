@@ -2,6 +2,8 @@ import OpenAI from "openai";
 import { StrategyType } from "../db/client.js";
 import type { XAnalysis } from "../types/index.js";
 
+const USE_MOCK_DATA = process.env.USE_MOCK_DATA === "true";
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -30,7 +32,7 @@ async function fetchTweets(xHandle: string): Promise<Tweet[]> {
     throw new Error(`Failed to get profile for ${xHandle}`);
   }
 
-  const profile = await profileRes.json();
+  const profile = await profileRes.json() as { userId: string };
 
   // Fetch tweets
   const tweetsRes = await fetch(
@@ -48,7 +50,32 @@ async function fetchTweets(xHandle: string): Promise<Tweet[]> {
     throw new Error(`Failed to fetch tweets for ${xHandle}`);
   }
 
-  const data = await tweetsRes.json();
+  interface TweetResponse {
+    result?: {
+      timeline?: {
+        instructions?: Array<{
+          type: string;
+          entries?: Array<{
+            content?: {
+              itemContent?: {
+                tweet_results?: {
+                  result?: {
+                    legacy?: {
+                      full_text: string;
+                      favorite_count: number;
+                      retweet_count: number;
+                    };
+                  };
+                };
+              };
+            };
+          }>;
+        }>;
+      };
+    };
+  }
+
+  const data = await tweetsRes.json() as TweetResponse;
   const tweets: Tweet[] = [];
 
   const instructions = data.result?.timeline?.instructions || [];
@@ -101,9 +128,74 @@ function classifyStrategy(analysis: XAnalysis): StrategyType {
   return StrategyType.BALANCED;
 }
 
+// Generate mock X analysis based on handle
+function getMockAnalysis(xHandle: string): { analysis: XAnalysis; recommendedStrategy: StrategyType } {
+  // Generate deterministic mock data based on handle
+  const hash = xHandle.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const variant = hash % 3;
+
+  const mockAnalyses: Array<{ analysis: XAnalysis; recommendedStrategy: StrategyType }> = [
+    {
+      analysis: {
+        followerCount: 1250,
+        followingCount: 420,
+        tweetCount: 3500,
+        accountAge: 730,
+        cryptoMentionRate: 0.15,
+        engagementRate: 0.02,
+        riskTolerance: "low",
+        tradingExperience: "beginner",
+        interests: ["DeFi", "NFTs", "Community", "Monad"],
+        reasoning: "Your profile shows cautious engagement with crypto. You prefer established projects and long-term holds. Conservative strategy recommended for steady growth.",
+      },
+      recommendedStrategy: StrategyType.CONSERVATIVE,
+    },
+    {
+      analysis: {
+        followerCount: 5420,
+        followingCount: 890,
+        tweetCount: 12500,
+        accountAge: 540,
+        cryptoMentionRate: 0.35,
+        engagementRate: 0.04,
+        riskTolerance: "medium",
+        tradingExperience: "intermediate",
+        interests: ["Trading", "Memecoins", "Monad", "DeFi"],
+        reasoning: "Your profile shows active crypto engagement with balanced approach. You follow trends but maintain some caution. Balanced strategy recommended for growth with managed risk.",
+      },
+      recommendedStrategy: StrategyType.BALANCED,
+    },
+    {
+      analysis: {
+        followerCount: 15200,
+        followingCount: 2100,
+        tweetCount: 45000,
+        accountAge: 1095,
+        cryptoMentionRate: 0.65,
+        engagementRate: 0.08,
+        riskTolerance: "high",
+        tradingExperience: "advanced",
+        interests: ["Degen Plays", "New Launches", "High Risk", "Monad"],
+        reasoning: "Your profile shows degen energy with high activity in new launches. You're comfortable with volatility and chase high returns. Aggressive strategy recommended for maximum upside.",
+      },
+      recommendedStrategy: StrategyType.AGGRESSIVE,
+    },
+  ];
+
+  return mockAnalyses[variant];
+}
+
 export async function analyzeXAccount(
   xHandle: string
 ): Promise<{ analysis: XAnalysis; recommendedStrategy: StrategyType }> {
+  // Use mock data in testnet mode
+  if (USE_MOCK_DATA) {
+    console.log(`[MOCK] Analyzing X account @${xHandle}`);
+    // Add a small delay to simulate API call
+    await new Promise((r) => setTimeout(r, 1500));
+    return getMockAnalysis(xHandle);
+  }
+
   // Fetch user's tweets
   const tweets = await fetchTweets(xHandle);
 

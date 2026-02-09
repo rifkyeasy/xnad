@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { ENV } from "./config.js";
 import type { Tweet } from "./x-service.js";
+import { getMockSignals, getMockXAnalysis, type MockXAnalysis } from "./mock-data.js";
 
 const openai = new OpenAI({
   apiKey: ENV.OPENAI_API_KEY,
@@ -133,4 +134,102 @@ export function getActionableSignals(
       a.signal.confidence >= minConfidence &&
       (a.signal.tokenAddress || a.signal.tokenSymbol)
   );
+}
+
+// User X Analysis Result
+export interface UserXAnalysis {
+  xHandle: string;
+  followerCount: number;
+  followingCount: number;
+  tweetCount: number;
+  profileAnalysis: {
+    cryptoExperience: "beginner" | "intermediate" | "advanced";
+    riskTolerance: "low" | "medium" | "high";
+    tradingStyle: "holder" | "swing" | "degen";
+    interests: string[];
+  };
+  recommendedStrategy: "CONSERVATIVE" | "BALANCED" | "AGGRESSIVE";
+  confidence: number;
+  reasoning: string;
+}
+
+const USER_ANALYSIS_PROMPT = `You are an AI that analyzes a user's X/Twitter profile to determine their crypto trading style and risk tolerance.
+
+Based on the user's profile, tweets, and engagement patterns, classify them into one of three strategies:
+1. CONSERVATIVE - Low risk tolerance, prefers established tokens, long-term holder
+2. BALANCED - Medium risk, mixes stable and growth tokens, swing trader
+3. AGGRESSIVE - High risk tolerance, chases new launches, degen trader
+
+Respond in JSON format only.`;
+
+// Analyze a user's X profile to determine their trading strategy
+export async function analyzeUserX(xHandle: string): Promise<UserXAnalysis> {
+  // In mock mode, return mock data
+  if (ENV.USE_MOCK_DATA) {
+    console.log(`[MOCK] Analyzing X profile for @${xHandle}`);
+    const mockData = getMockXAnalysis(xHandle);
+    return mockData;
+  }
+
+  try {
+    // In real mode, we would fetch user data from X API and analyze
+    const userPrompt = `Analyze this X/Twitter user for crypto trading strategy:
+
+Handle: @${xHandle}
+
+Based on typical engagement patterns and crypto community behavior, classify this user.
+
+Respond with JSON:
+{
+  "xHandle": "${xHandle}",
+  "followerCount": <estimated>,
+  "followingCount": <estimated>,
+  "tweetCount": <estimated>,
+  "profileAnalysis": {
+    "cryptoExperience": "beginner" | "intermediate" | "advanced",
+    "riskTolerance": "low" | "medium" | "high",
+    "tradingStyle": "holder" | "swing" | "degen",
+    "interests": ["array of interests"]
+  },
+  "recommendedStrategy": "CONSERVATIVE" | "BALANCED" | "AGGRESSIVE",
+  "confidence": 0.0 to 1.0,
+  "reasoning": "explanation"
+}`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      max_tokens: 1024,
+      messages: [
+        { role: "system", content: USER_ANALYSIS_PROMPT },
+        { role: "user", content: userPrompt },
+      ],
+    });
+
+    const textContent = response.choices[0]?.message?.content;
+    if (!textContent) {
+      throw new Error("No response from AI");
+    }
+
+    const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("No JSON in response");
+    }
+
+    return JSON.parse(jsonMatch[0]) as UserXAnalysis;
+  } catch (error) {
+    console.error("Error analyzing user X:", error);
+    // Fallback to mock data on error
+    return getMockXAnalysis(xHandle);
+  }
+}
+
+// Get signals for a specific strategy (for user's personalized trading)
+export function getSignalsForStrategy(
+  strategyType: "CONSERVATIVE" | "BALANCED" | "AGGRESSIVE"
+): TradeSignal[] {
+  if (ENV.USE_MOCK_DATA) {
+    return getMockSignals(strategyType);
+  }
+  // In real mode, this would filter real signals based on strategy params
+  return [];
 }

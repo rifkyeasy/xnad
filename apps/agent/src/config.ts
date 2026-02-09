@@ -1,5 +1,10 @@
 import { config } from "dotenv";
-config();
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Load .env from monorepo root
+config({ path: path.resolve(__dirname, "../../../.env") });
 
 // Popular crypto/Monad X accounts to monitor
 export const WATCHED_ACCOUNTS = [
@@ -33,9 +38,15 @@ export const SIGNAL_KEYWORDS = [
   "nadfun",
 ];
 
+// Mock router for testnet (with AMM bonding curve simulation)
+const MOCK_ROUTER = "0xE3965709c657748501bB33a55AEFdE7F9622FD5E";
+
 // Contract addresses
 export const CONTRACTS = {
-  bondingCurveRouter: "0x6F6B8F1a20703309951a5127c45B49b1CD981A22",
+  // Use mock router in mock mode, real router in live mode
+  bondingCurveRouter: process.env.USE_MOCK_DATA === "true"
+    ? (process.env.MOCK_ROUTER_ADDRESS || MOCK_ROUTER)
+    : "0x6F6B8F1a20703309951a5127c45B49b1CD981A22",
   dexRouter: "0x0B79d71AE99528D1dB24A4148b5f4F865cc2b137",
   lens: "0x7e78A8DE94f21804F7a17F4E8BF9EC2c872187ea",
   curve: "0xA7283d07812a02AFB7C09B60f8896bCEA3F90aCE",
@@ -57,5 +68,8 @@ export const ENV = {
   OPENAI_API_KEY: process.env.OPENAI_API_KEY || "",
   X_RAPIDAPI_KEY: process.env.X_RAPIDAPI_API_KEY || "",
   PRIVATE_KEY: process.env.PRIVATE_KEY || "",
-  RPC_URL: process.env.RPC_URL || "https://monad-mainnet.drpc.org",
+  RPC_URL: process.env.RPC_URL || "https://testnet-rpc.monad.xyz",
+  // Mock mode for testnet development
+  USE_MOCK_DATA: process.env.USE_MOCK_DATA === "true",
+  DRY_RUN: process.env.DRY_RUN === "true",
 };

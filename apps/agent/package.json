@@ -2,15 +2,18 @@
   "name": "@xnad/agent",
   "version": "1.0.0",
   "description": "Social-Execution Trading Agent for nad.fun",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
-    "agent": "tsx src/index.ts"
+    "agent": "tsx src/index.ts",
+    "test:nadfun": "tsx src/test-nadfun.ts"
   },
   "dependencies": {
+    "@nadfun/sdk": "^0.4.3",
     "openai": "^4.77.0",
     "dotenv": "^16.4.5",
     "viem": "^2.34.0"
