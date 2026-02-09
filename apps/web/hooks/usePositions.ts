@@ -13,6 +13,20 @@ interface PositionData {
   refetch: () => Promise<void>;
 }
 
+interface IndexerPosition {
+  id: string;
+  vaultId: string;
+  token: string;
+  balance: string;
+  totalBought: string;
+  totalSold: string;
+  totalCostBasis: string;
+  totalProceeds: string;
+  realizedPnl: string;
+  buyCount: number;
+  sellCount: number;
+}
+
 interface BackendPosition {
   tokenAddress: string;
   tokenSymbol: string;
@@ -36,14 +50,45 @@ export function usePositions(): PositionData {
     setError(null);
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/positions/${address}`);
-      if (!res.ok) {
+      // Try indexer first (via backend proxy)
+      const indexerRes = await fetch(`${BACKEND_URL}/api/indexer/vaults/${address.toLowerCase()}/positions`);
+
+      if (indexerRes.ok) {
+        const indexerData = (await indexerRes.json()) as IndexerPosition[];
+
+        // Transform indexer positions to frontend format
+        const transformedPositions: Position[] = indexerData
+          .filter((p) => BigInt(p.balance) > 0n)
+          .map((p) => {
+            const balance = (Number(p.balance) / 1e18).toString();
+            const costBasis = (Number(p.totalCostBasis) / 1e18).toString();
+            // Estimate current value as cost basis (real price requires nad.fun API)
+            const currentValue = costBasis;
+            const unrealizedPnl = "0";
+            const unrealizedPnlPct = 0;
+
+            return {
+              tokenAddress: p.token,
+              tokenSymbol: p.token.slice(0, 6), // Will be enriched by backend
+              balance,
+              costBasis,
+              currentValue,
+              unrealizedPnl,
+              unrealizedPnlPct,
+            };
+          });
+
+        setPositions(transformedPositions);
+        return;
+      }
+
+      // Fallback to backend positions API
+      const backendRes = await fetch(`${BACKEND_URL}/api/positions/${address}`);
+      if (!backendRes.ok) {
         throw new Error("Failed to fetch positions");
       }
 
-      const data = (await res.json()) as BackendPosition[];
-
-      // Transform backend positions to frontend format
+      const data = (await backendRes.json()) as BackendPosition[];
       const transformedPositions: Position[] = data.map((p) => ({
         tokenAddress: p.tokenAddress,
         tokenSymbol: p.tokenSymbol,
@@ -183,6 +228,19 @@ interface TradeHistory {
   createdAt: string;
 }
 
+interface IndexerTrade {
+  id: string;
+  vaultId: string;
+  token: string;
+  isBuy: boolean;
+  amountIn: string;
+  amountOut: string;
+  tradeId: string;
+  blockNumber: string;
+  blockTimestamp: string;
+  txHash: string;
+}
+
 interface TradesData {
   trades: TradeHistory[];
   isLoading: boolean;
@@ -203,12 +261,37 @@ export function useTradeHistory(limit = 20): TradesData {
     setError(null);
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/trades/${address}?limit=${limit}`);
-      if (!res.ok) {
+      // Try indexer first (via backend proxy)
+      const indexerRes = await fetch(
+        `${BACKEND_URL}/api/indexer/vaults/${address.toLowerCase()}/trades?limit=${limit}`
+      );
+
+      if (indexerRes.ok) {
+        const indexerData = (await indexerRes.json()) as IndexerTrade[];
+
+        const transformedTrades: TradeHistory[] = indexerData.map((t) => ({
+          id: t.id,
+          tokenAddress: t.token,
+          tokenSymbol: t.token.slice(0, 6),
+          action: t.isBuy ? "BUY" : "SELL",
+          amountIn: (Number(t.amountIn) / 1e18).toFixed(6),
+          amountOut: (Number(t.amountOut) / 1e18).toFixed(6),
+          txHash: t.txHash,
+          status: "COMPLETED",
+          createdAt: new Date(Number(t.blockTimestamp) * 1000).toISOString(),
+        }));
+
+        setTrades(transformedTrades);
+        return;
+      }
+
+      // Fallback to backend trades API
+      const backendRes = await fetch(`${BACKEND_URL}/api/trades/${address}?limit=${limit}`);
+      if (!backendRes.ok) {
         throw new Error("Failed to fetch trades");
       }
 
-      const data = (await res.json()) as TradeHistory[];
+      const data = (await backendRes.json()) as TradeHistory[];
       setTrades(data);
     } catch (err) {
       console.error("Error fetching trades:", err);
@@ -227,5 +310,83 @@ export function useTradeHistory(limit = 20): TradesData {
     isLoading,
     error,
     refetch: fetchTrades,
+  };
+}
+
+// Hook to get vault info from indexer
+interface VaultInfo {
+  id: string;
+  owner: string;
+  strategyType: number;
+  paused: boolean;
+  balance: string;
+  totalDeposited: string;
+  totalWithdrawn: string;
+  tradeCount: number;
+}
+
+interface VaultData {
+  vault: VaultInfo | null;
+  isLoading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+}
+
+export function useVaultInfo(vaultAddress?: string): VaultData {
+  const { address } = useAccount();
+  const targetAddress = vaultAddress || address;
+  const [vault, setVault] = useState<VaultInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchVault = useCallback(async () => {
+    if (!targetAddress) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/indexer/vaults/${targetAddress.toLowerCase()}`);
+
+      if (res.ok) {
+        const data = await res.json();
+        setVault({
+          id: data.id,
+          owner: data.owner,
+          strategyType: data.strategyType,
+          paused: data.paused,
+          balance: (Number(data.balance) / 1e18).toString(),
+          totalDeposited: (Number(data.totalDeposited) / 1e18).toString(),
+          totalWithdrawn: (Number(data.totalWithdrawn) / 1e18).toString(),
+          tradeCount: data.tradeCount,
+        });
+      } else if (res.status === 404) {
+        setVault(null);
+      } else {
+        throw new Error("Failed to fetch vault");
+      }
+    } catch (err) {
+      console.error("Error fetching vault:", err);
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [targetAddress]);
+
+  useEffect(() => {
+    fetchVault();
+  }, [fetchVault]);
+
+  // Refetch every 15 seconds
+  useEffect(() => {
+    const interval = setInterval(fetchVault, 15000);
+    return () => clearInterval(interval);
+  }, [fetchVault]);
+
+  return {
+    vault,
+    isLoading,
+    error,
+    refetch: fetchVault,
   };
 }

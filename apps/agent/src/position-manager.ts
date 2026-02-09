@@ -61,7 +61,7 @@ export class PositionManager {
    */
   async getActiveVaults(): Promise<IndexerVault[]> {
     try {
-      const res = await fetch(`${INDEXER_URL}/api/vaults/active`);
+      const res = await fetch(`${INDEXER_URL}/vaults/active`);
       if (!res.ok) {
         console.error('Failed to fetch vaults from indexer:', res.status);
         return this.getVaultsFromBackend();
@@ -113,7 +113,7 @@ export class PositionManager {
    */
   async getVaultPositions(vaultAddress: string): Promise<IndexerPosition[]> {
     try {
-      const res = await fetch(`${INDEXER_URL}/api/vaults/${vaultAddress}/positions`);
+      const res = await fetch(`${INDEXER_URL}/vaults/${vaultAddress}/positions`);
       if (!res.ok) {
         console.error('Failed to fetch positions from indexer:', res.status);
         return this.getPositionsFromBackend(vaultAddress);
@@ -245,7 +245,7 @@ export class PositionManager {
   async getVaultWithPositions(vaultAddress: string): Promise<VaultWithPositions | null> {
     try {
       // Fetch vault from indexer
-      const vaultRes = await fetch(`${INDEXER_URL}/api/vaults/${vaultAddress}`);
+      const vaultRes = await fetch(`${INDEXER_URL}/vaults/${vaultAddress}`);
       if (!vaultRes.ok) {
         console.error('Vault not found:', vaultAddress);
         return null;
