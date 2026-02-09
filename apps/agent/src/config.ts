@@ -11,7 +11,6 @@ export const WATCHED_ACCOUNTS = [
   "moaborz",        // Monad co-founder
   "notthreadguy",   // Monad co-founder
   "0xsmac",         // Monad
-  "moaborz",        // Monad
   "nikitosk",       // Monad community
   "nad_fun",        // nad.fun official
   "molooch",        // Monad community
@@ -38,27 +37,24 @@ export const SIGNAL_KEYWORDS = [
   "nadfun",
 ];
 
-// Mock router for testnet (with AMM bonding curve simulation)
-const MOCK_ROUTER = "0xE3965709c657748501bB33a55AEFdE7F9622FD5E";
-
-// Contract addresses
-export const CONTRACTS = {
-  // Use mock router in mock mode, real router in live mode
-  bondingCurveRouter: process.env.USE_MOCK_DATA === "true"
-    ? (process.env.MOCK_ROUTER_ADDRESS || MOCK_ROUTER)
-    : "0x6F6B8F1a20703309951a5127c45B49b1CD981A22",
+// nad.fun testnet contract addresses
+export const NADFUN_CONTRACTS = {
+  bondingCurveRouter: "0x865054F0F6A288adaAc30261731361EA7E908003",
   dexRouter: "0x0B79d71AE99528D1dB24A4148b5f4F865cc2b137",
   lens: "0x7e78A8DE94f21804F7a17F4E8BF9EC2c872187ea",
   curve: "0xA7283d07812a02AFB7C09B60f8896bCEA3F90aCE",
   wmon: "0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A",
-  // Deployed vault factory (update after deployment)
+};
+
+// User vault contracts (deployed by us)
+export const VAULT_CONTRACTS = {
   vaultFactory: process.env.VAULT_FACTORY_ADDRESS || "",
 };
 
 // Trading config
 export const TRADING_CONFIG = {
   maxBuyAmount: "0.1",      // Max MON per trade
-  slippagePercent: 2,       // 2% slippage tolerance
+  slippagePercent: 5,       // 5% slippage tolerance
   minConfidence: 0.7,       // Minimum AI confidence to execute trade
   pollIntervalMs: 60000,    // Check every 60 seconds
 };
@@ -69,7 +65,5 @@ export const ENV = {
   X_RAPIDAPI_KEY: process.env.X_RAPIDAPI_API_KEY || "",
   PRIVATE_KEY: process.env.PRIVATE_KEY || "",
   RPC_URL: process.env.RPC_URL || "https://testnet-rpc.monad.xyz",
-  // Mock mode for testnet development
-  USE_MOCK_DATA: process.env.USE_MOCK_DATA === "true",
   DRY_RUN: process.env.DRY_RUN === "true",
 };

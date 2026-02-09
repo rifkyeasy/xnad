@@ -1,7 +1,7 @@
 import { WATCHED_ACCOUNTS, TRADING_CONFIG, ENV } from "./config.js";
 import { getTweets, filterSignalTweets, extractTokenAddresses } from "./x-service.js";
 import { analyzeTweet, getActionableSignals, type TweetAnalysis } from "./ai-analyzer.js";
-import { Trader, type TradeResult } from "./trader.js";
+import { getTradingClient, type TradingClient, type TradeResult } from "./trading-client.js";
 
 // Track processed tweet IDs to avoid duplicates
 const processedTweets = new Set<string>();
@@ -65,7 +65,7 @@ async function fetchAndAnalyzeTweets(): Promise<TweetAnalysis[]> {
 }
 
 async function executeSignals(
-  trader: Trader,
+  client: TradingClient,
   analyses: TweetAnalysis[]
 ): Promise<TradeResult[]> {
   const results: TradeResult[] = [];
@@ -88,7 +88,17 @@ async function executeSignals(
     console.log(`Reason: ${analysis.signal.reasoning}`);
 
     // Execute the trade
-    const result = await trader.executeTrade(analysis.signal);
+    let result: TradeResult;
+    if (analysis.signal.action === "buy") {
+      result = await client.executeBuy(analysis.signal);
+    } else if (analysis.signal.action === "sell" && analysis.signal.tokenAddress) {
+      const amount = analysis.signal.suggestedAmount || "0";
+      result = await client.executeSell(analysis.signal.tokenAddress, amount);
+    } else {
+      console.log("SKIPPED: Hold signal or missing token address");
+      continue;
+    }
+
     results.push(result);
     tradeHistory.push(result);
 
@@ -105,12 +115,13 @@ async function executeSignals(
   return results;
 }
 
-async function runAgentLoop(trader: Trader): Promise<void> {
+async function runAgentLoop(client: TradingClient): Promise<void> {
   console.log("\n========================================");
   console.log("  Social-Execution Trading Agent");
+  console.log("  Powered by nad.fun");
   console.log("========================================");
-  console.log(`Wallet: ${trader.address}`);
-  console.log(`Balance: ${await trader.getBalance()} MON`);
+  console.log(`Wallet: ${client.address}`);
+  console.log(`Balance: ${await client.getBalance()} MON`);
   console.log(`Watching: ${WATCHED_ACCOUNTS.join(", ")}`);
   console.log(`Poll interval: ${TRADING_CONFIG.pollIntervalMs / 1000}s`);
   console.log(`Min confidence: ${TRADING_CONFIG.minConfidence * 100}%`);
@@ -124,7 +135,7 @@ async function runAgentLoop(trader: Trader): Promise<void> {
 
       // Execute trades for actionable signals
       if (analyses.length > 0) {
-        await executeSignals(trader, analyses);
+        await executeSignals(client, analyses);
       }
 
       // Log status
@@ -170,8 +181,8 @@ async function main(): Promise<void> {
   }
 
   try {
-    const trader = new Trader();
-    await runAgentLoop(trader);
+    const client = getTradingClient();
+    await runAgentLoop(client);
   } catch (error) {
     console.error("Fatal error:", error);
     process.exit(1);

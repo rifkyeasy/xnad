@@ -10,7 +10,8 @@
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
     "agent": "tsx src/index.ts",
-    "test:nadfun": "tsx src/test-nadfun.ts"
+    "test:nadfun": "tsx src/test-nadfun.ts",
+    "list-tokens": "tsx src/list-tokens.ts"
   },
   "dependencies": {
     "@nadfun/sdk": "^0.4.3",

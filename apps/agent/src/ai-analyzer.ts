@@ -1,7 +1,6 @@
 import OpenAI from "openai";
 import { ENV } from "./config.js";
 import type { Tweet } from "./x-service.js";
-import { getMockSignals, getMockXAnalysis, type MockXAnalysis } from "./mock-data.js";
 
 const openai = new OpenAI({
   apiKey: ENV.OPENAI_API_KEY,
@@ -164,15 +163,7 @@ Respond in JSON format only.`;
 
 // Analyze a user's X profile to determine their trading strategy
 export async function analyzeUserX(xHandle: string): Promise<UserXAnalysis> {
-  // In mock mode, return mock data
-  if (ENV.USE_MOCK_DATA) {
-    console.log(`[MOCK] Analyzing X profile for @${xHandle}`);
-    const mockData = getMockXAnalysis(xHandle);
-    return mockData;
-  }
-
   try {
-    // In real mode, we would fetch user data from X API and analyze
     const userPrompt = `Analyze this X/Twitter user for crypto trading strategy:
 
 Handle: @${xHandle}
@@ -218,18 +209,21 @@ Respond with JSON:
     return JSON.parse(jsonMatch[0]) as UserXAnalysis;
   } catch (error) {
     console.error("Error analyzing user X:", error);
-    // Fallback to mock data on error
-    return getMockXAnalysis(xHandle);
+    // Return default analysis on error
+    return {
+      xHandle,
+      followerCount: 0,
+      followingCount: 0,
+      tweetCount: 0,
+      profileAnalysis: {
+        cryptoExperience: "beginner",
+        riskTolerance: "low",
+        tradingStyle: "holder",
+        interests: [],
+      },
+      recommendedStrategy: "CONSERVATIVE",
+      confidence: 0.5,
+      reasoning: "Analysis failed, defaulting to conservative strategy",
+    };
   }
-}
-
-// Get signals for a specific strategy (for user's personalized trading)
-export function getSignalsForStrategy(
-  strategyType: "CONSERVATIVE" | "BALANCED" | "AGGRESSIVE"
-): TradeSignal[] {
-  if (ENV.USE_MOCK_DATA) {
-    return getMockSignals(strategyType);
-  }
-  // In real mode, this would filter real signals based on strategy params
-  return [];
 }

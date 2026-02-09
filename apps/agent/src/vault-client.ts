@@ -7,12 +7,12 @@ import {
   type Address,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { ENV, CONTRACTS } from "./config.js";
+import { ENV, NADFUN_CONTRACTS, VAULT_CONTRACTS } from "./config.js";
 
-// Monad mainnet chain
-const monadMainnet = {
-  id: 41454,
-  name: "Monad",
+// Monad testnet chain
+const monadTestnet = {
+  id: 10143,
+  name: "Monad Testnet",
   nativeCurrency: { decimals: 18, name: "Monad", symbol: "MON" },
   rpcUrls: { default: { http: [ENV.RPC_URL] } },
 };
@@ -160,12 +160,12 @@ export class VaultClient {
     this.factoryAddress = factoryAddress;
 
     this.publicClient = createPublicClient({
-      chain: monadMainnet,
+      chain: monadTestnet,
       transport: http(),
     });
 
     this.walletClient = createWalletClient({
-      chain: monadMainnet,
+      chain: monadTestnet,
       transport: http(),
       account: this.account,
     });
@@ -274,7 +274,7 @@ export class VaultClient {
         abi: userVaultAbi,
         functionName: "executeBuy",
         args: [
-          CONTRACTS.bondingCurveRouter as Address,
+          NADFUN_CONTRACTS.bondingCurveRouter as Address,
           tokenAddress as Address,
           parseEther(amountIn),
           parseEther(minAmountOut),
@@ -321,7 +321,7 @@ export class VaultClient {
         abi: userVaultAbi,
         functionName: "executeSell",
         args: [
-          CONTRACTS.bondingCurveRouter as Address,
+          NADFUN_CONTRACTS.bondingCurveRouter as Address,
           tokenAddress as Address,
           parseEther(tokenAmount),
           parseEther(minAmountOut),
