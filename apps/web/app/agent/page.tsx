@@ -1,19 +1,20 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useAccount } from "wagmi";
-import { Card, CardBody } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Spinner } from "@heroui/spinner";
-import { Progress } from "@heroui/progress";
-import { useVaultFactory, useVault } from "@/hooks/useVault";
-import { useAgentStore, type StrategyType } from "@/stores/agent";
-import { StrategyCards } from "@/components/agent/StrategyCards";
-import { AgentDashboard } from "@/components/agent/AgentDashboard";
-import { STRATEGY_CONFIG, StrategyType as StrategyEnum } from "@/config/contracts";
+import { useState, useEffect } from 'react';
+import { useAccount } from 'wagmi';
+import { Card, CardBody } from '@heroui/card';
+import { Button } from '@heroui/button';
+import { Input } from '@heroui/input';
+import { Spinner } from '@heroui/spinner';
+import { Progress } from '@heroui/progress';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
+import { useVaultFactory, useVault } from '@/hooks/useVault';
+import { useAgentStore, type StrategyType } from '@/stores/agent';
+import { StrategyCards } from '@/components/agent/StrategyCards';
+import { AgentDashboard } from '@/components/agent/AgentDashboard';
+import { STRATEGY_CONFIG, StrategyType as StrategyEnum } from '@/config/contracts';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
 export default function AgentPage() {
   const { isConnected, address } = useAccount();
@@ -39,16 +40,16 @@ export default function AgentPage() {
     setTakeProfit,
   } = useAgentStore();
 
-  const [xInput, setXInput] = useState("");
+  const [xInput, setXInput] = useState('');
   const [isCreatingVault, setIsCreatingVault] = useState(false);
 
   // Check if user already has a vault
   useEffect(() => {
     if (hasVault && vaultAddress && selectedStrategy) {
       setVaultAddress(vaultAddress);
-      setStep("dashboard");
+      setStep('dashboard');
     } else if (isConnected && !xAnalysis) {
-      setStep("analyze");
+      setStep('analyze');
     }
   }, [hasVault, vaultAddress, isConnected, xAnalysis, selectedStrategy, setVaultAddress, setStep]);
 
@@ -62,23 +63,24 @@ export default function AgentPage() {
     try {
       // Create user first
       await fetch(`${BACKEND_URL}/api/users`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ walletAddress: address }),
       });
 
       // Analyze X account
       const res = await fetch(`${BACKEND_URL}/api/users/${address}/analyze-x`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ xHandle: xInput }),
       });
 
       if (!res.ok) {
-        throw new Error("Failed to analyze X account");
+        throw new Error('Failed to analyze X account');
       }
 
       const data = await res.json();
+
       setXHandle(xInput);
       setXAnalysis(data.analysis, data.recommendedStrategy);
 
@@ -88,12 +90,14 @@ export default function AgentPage() {
         BALANCED: StrategyEnum.BALANCED,
         AGGRESSIVE: StrategyEnum.AGGRESSIVE,
       };
-      const strategyConfig = STRATEGY_CONFIG[strategyEnumMap[data.recommendedStrategy as StrategyType]];
+      const strategyConfig =
+        STRATEGY_CONFIG[strategyEnumMap[data.recommendedStrategy as StrategyType]];
+
       setStopLoss(strategyConfig.stopLoss * 100);
       setTakeProfit(strategyConfig.takeProfit * 100);
     } catch (err) {
-      console.error("Analysis error:", err);
-      setError(err instanceof Error ? err.message : "Analysis failed");
+      console.error('Analysis error:', err);
+      setError(err instanceof Error ? err.message : 'Analysis failed');
     } finally {
       setIsAnalyzing(false);
     }
@@ -110,9 +114,11 @@ export default function AgentPage() {
     try {
       // Create vault if needed
       let vault = vaultAddress;
+
       if (!hasVault) {
         const txHash = await createVault();
-        console.log("Vault creation tx:", txHash);
+
+        console.log('Vault creation tx:', txHash);
         // Wait a bit for the vault to be created
         await new Promise((r) => setTimeout(r, 3000));
         // Refetch vault address
@@ -128,12 +134,13 @@ export default function AgentPage() {
         };
         const strategyIndex = strategyEnumMap[strategy];
         const strategyConfig = STRATEGY_CONFIG[strategyIndex];
+
         await setStrategy(strategyIndex, strategyConfig.maxTradeAmount);
 
         // Update backend
         await fetch(`${BACKEND_URL}/api/users/${address}/strategy`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             strategyType: strategy,
             autoTrade: true,
@@ -143,8 +150,8 @@ export default function AgentPage() {
         setVaultAddress(vault);
       }
     } catch (err) {
-      console.error("Strategy selection error:", err);
-      setError(err instanceof Error ? err.message : "Failed to set strategy");
+      console.error('Strategy selection error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to set strategy');
     } finally {
       setIsCreatingVault(false);
     }
@@ -160,9 +167,7 @@ export default function AgentPage() {
             <p className="text-default-500 mb-6">
               Connect your wallet to get started with AI-powered trading
             </p>
-            <p className="text-sm text-default-400">
-              Use the Connect Wallet button in the navbar
-            </p>
+            <p className="text-sm text-default-400">Use the Connect Wallet button in the navbar</p>
           </CardBody>
         </Card>
       </div>
@@ -170,7 +175,7 @@ export default function AgentPage() {
   }
 
   // Dashboard (has vault and strategy selected)
-  if (step === "dashboard" && vaultAddress) {
+  if (step === 'dashboard' && vaultAddress) {
     return (
       <div className="container mx-auto max-w-6xl py-8 px-4">
         <h1 className="text-2xl font-bold mb-6">AI Trading Agent</h1>
@@ -180,19 +185,17 @@ export default function AgentPage() {
   }
 
   // Strategy selection
-  if (step === "select" && xAnalysis) {
+  if (step === 'select' && xAnalysis) {
     return (
       <div className="container mx-auto max-w-6xl py-8 px-4">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold mb-2">Choose Your Strategy</h1>
           <p className="text-default-500">
-            Based on your X profile @{xHandle}, we recommend the{" "}
+            Based on your X profile @{xHandle}, we recommend the{' '}
             <span className="font-bold text-primary">{recommendedStrategy}</span> strategy
           </p>
           {xAnalysis.reasoning && (
-            <p className="text-sm text-default-400 mt-2 max-w-2xl mx-auto">
-              {xAnalysis.reasoning}
-            </p>
+            <p className="text-sm text-default-400 mt-2 max-w-2xl mx-auto">{xAnalysis.reasoning}</p>
           )}
         </div>
 
@@ -205,9 +208,9 @@ export default function AgentPage() {
         )}
 
         <StrategyCards
+          isLoading={isCreatingVault}
           recommendedStrategy={recommendedStrategy}
           onSelect={handleSelectStrategy}
-          isLoading={isCreatingVault}
         />
       </div>
     );
@@ -221,8 +224,8 @@ export default function AgentPage() {
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-2">Start AI Trading</h1>
             <p className="text-default-500">
-              Enter your X/Twitter handle to analyze your profile and get a
-              personalized trading strategy
+              Enter your X/Twitter handle to analyze your profile and get a personalized trading
+              strategy
             </p>
           </div>
 
@@ -233,40 +236,35 @@ export default function AgentPage() {
           )}
 
           <Input
+            isDisabled={isAnalyzing}
             label="X/Twitter Handle"
             placeholder="username (without @)"
+            startContent={<span className="text-default-400">@</span>}
             value={xInput}
             onValueChange={setXInput}
-            startContent={<span className="text-default-400">@</span>}
-            isDisabled={isAnalyzing}
           />
 
           {isAnalyzing ? (
             <div className="text-center py-4">
               <Spinner size="lg" />
               <p className="text-default-500 mt-4">Analyzing your profile...</p>
-              <Progress
-                isIndeterminate
-                color="primary"
-                className="mt-2"
-                size="sm"
-              />
+              <Progress isIndeterminate className="mt-2" color="primary" size="sm" />
             </div>
           ) : (
             <Button
-              color="primary"
-              size="lg"
               className="w-full"
-              onPress={handleAnalyze}
+              color="primary"
               isDisabled={!xInput}
+              size="lg"
+              onPress={handleAnalyze}
             >
               Analyze & Get Strategy
             </Button>
           )}
 
           <p className="text-xs text-default-400 text-center">
-            We analyze your tweets to understand your risk tolerance and trading
-            experience, then recommend a suitable strategy.
+            We analyze your tweets to understand your risk tolerance and trading experience, then
+            recommend a suitable strategy.
           </p>
         </CardBody>
       </Card>

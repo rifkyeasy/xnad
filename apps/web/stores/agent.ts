@@ -1,13 +1,13 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-export type StrategyType = "CONSERVATIVE" | "BALANCED" | "AGGRESSIVE";
+export type StrategyType = 'CONSERVATIVE' | 'BALANCED' | 'AGGRESSIVE';
 
 export interface XAnalysis {
   followerCount: number;
   cryptoMentionRate: number;
-  riskTolerance: "low" | "medium" | "high";
-  tradingExperience: "beginner" | "intermediate" | "advanced";
+  riskTolerance: 'low' | 'medium' | 'high';
+  tradingExperience: 'beginner' | 'intermediate' | 'advanced';
   interests: string[];
   reasoning?: string;
 }
@@ -40,7 +40,7 @@ export interface AgentState {
   positions: Position[];
 
   // UI state
-  step: "connect" | "analyze" | "select" | "dashboard";
+  step: 'connect' | 'analyze' | 'select' | 'dashboard';
   isAnalyzing: boolean;
   error: string | null;
 
@@ -54,7 +54,7 @@ export interface AgentState {
   setStopLoss: (percent: number | null) => void;
   setTakeProfit: (percent: number | null) => void;
   setPositions: (positions: Position[]) => void;
-  setStep: (step: AgentState["step"]) => void;
+  setStep: (step: AgentState['step']) => void;
   setIsAnalyzing: (analyzing: boolean) => void;
   setError: (error: string | null) => void;
   reset: () => void;
@@ -71,7 +71,7 @@ const initialState = {
   stopLossPercent: null,
   takeProfitPercent: null,
   positions: [],
-  step: "connect" as const,
+  step: 'connect' as const,
   isAnalyzing: false,
   error: null,
 };
@@ -87,14 +87,12 @@ export const useAgentStore = create<AgentState>()(
         set({
           xAnalysis: analysis,
           recommendedStrategy: recommended,
-          step: "select",
+          step: 'select',
         }),
 
-      setSelectedStrategy: (strategy) =>
-        set({ selectedStrategy: strategy }),
+      setSelectedStrategy: (strategy) => set({ selectedStrategy: strategy }),
 
-      setVaultAddress: (address) =>
-        set({ vaultAddress: address, step: "dashboard" }),
+      setVaultAddress: (address) => set({ vaultAddress: address, step: 'dashboard' }),
 
       setAutoTrade: (enabled) => set({ autoTrade: enabled }),
 
@@ -115,7 +113,7 @@ export const useAgentStore = create<AgentState>()(
       reset: () => set(initialState),
     }),
     {
-      name: "agent-storage",
+      name: 'agent-storage',
       partialize: (state) => ({
         xHandle: state.xHandle,
         selectedStrategy: state.selectedStrategy,

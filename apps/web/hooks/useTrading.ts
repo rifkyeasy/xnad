@@ -1,15 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useCallback } from "react";
-import {
-  useAccount,
-  useChainId,
-  useReadContract,
-  useWriteContract,
-  useWaitForTransactionReceipt,
-  usePublicClient,
-} from "wagmi";
-import { parseEther, formatEther, type Address } from "viem";
+import { useState, useCallback } from 'react';
+import { useAccount, useChainId, useReadContract, useWriteContract, usePublicClient } from 'wagmi';
+import { parseEther, formatEther, type Address } from 'viem';
+
 import {
   getContracts,
   bondingCurveRouterAbi,
@@ -17,11 +11,12 @@ import {
   curveAbi,
   erc20Abi,
   dexRouterAbi,
-} from "@/lib/contracts";
+} from '@/lib/contracts';
 
 // Calculate minimum output with slippage
 function calculateMinOutput(amount: bigint, slippagePercent: number): bigint {
   const slippageBps = BigInt(Math.floor(slippagePercent * 100));
+
   return amount - (amount * slippageBps) / 10000n;
 }
 
@@ -40,7 +35,7 @@ export function useBuyQuote(tokenAddress: string, monAmount: string) {
   const { data, isLoading, error, refetch } = useReadContract({
     address: contracts.bondingCurveRouter,
     abi: bondingCurveRouterAbi,
-    functionName: "getAmountOutWithFee",
+    functionName: 'getAmountOutWithFee',
     args: [tokenAddress as Address, amountIn, true],
     query: {
       enabled: !!tokenAddress && amountIn > 0n,
@@ -48,8 +43,8 @@ export function useBuyQuote(tokenAddress: string, monAmount: string) {
   });
 
   return {
-    amountOut: data?.[0] ? formatEther(data[0]) : "0",
-    fee: data?.[1] ? formatEther(data[1]) : "0",
+    amountOut: data?.[0] ? formatEther(data[0]) : '0',
+    fee: data?.[1] ? formatEther(data[1]) : '0',
     amountOutRaw: data?.[0] || 0n,
     isLoading,
     error,
@@ -68,7 +63,7 @@ export function useSellQuote(tokenAddress: string, tokenAmount: string) {
   const { data, isLoading, error, refetch } = useReadContract({
     address: contracts.bondingCurveRouter,
     abi: bondingCurveRouterAbi,
-    functionName: "getAmountOutWithFee",
+    functionName: 'getAmountOutWithFee',
     args: [tokenAddress as Address, amountIn, false],
     query: {
       enabled: !!tokenAddress && amountIn > 0n,
@@ -76,8 +71,8 @@ export function useSellQuote(tokenAddress: string, tokenAmount: string) {
   });
 
   return {
-    amountOut: data?.[0] ? formatEther(data[0]) : "0",
-    fee: data?.[1] ? formatEther(data[1]) : "0",
+    amountOut: data?.[0] ? formatEther(data[0]) : '0',
+    fee: data?.[1] ? formatEther(data[1]) : '0',
     amountOutRaw: data?.[0] || 0n,
     isLoading,
     error,
@@ -92,7 +87,7 @@ export function useTokenBalance(tokenAddress: string) {
   const { data, isLoading, error, refetch } = useReadContract({
     address: tokenAddress as Address,
     abi: erc20Abi,
-    functionName: "balanceOf",
+    functionName: 'balanceOf',
     args: [address!],
     query: {
       enabled: !!tokenAddress && !!address,
@@ -100,7 +95,7 @@ export function useTokenBalance(tokenAddress: string) {
   });
 
   return {
-    balance: data ? formatEther(data) : "0",
+    balance: data ? formatEther(data) : '0',
     balanceRaw: data || 0n,
     isLoading,
     error,
@@ -115,7 +110,7 @@ export function useTokenAllowance(tokenAddress: string, spenderAddress: string) 
   const { data, isLoading, refetch } = useReadContract({
     address: tokenAddress as Address,
     abi: erc20Abi,
-    functionName: "allowance",
+    functionName: 'allowance',
     args: [address!, spenderAddress as Address],
     query: {
       enabled: !!tokenAddress && !!address && !!spenderAddress,
@@ -137,7 +132,7 @@ export function useTokenProgress(tokenAddress: string) {
   const { data, isLoading, error, refetch } = useReadContract({
     address: contracts.lens,
     abi: lensAbi,
-    functionName: "getProgress",
+    functionName: 'getProgress',
     args: [tokenAddress as Address],
     query: {
       enabled: !!tokenAddress,
@@ -146,8 +141,8 @@ export function useTokenProgress(tokenAddress: string) {
 
   return {
     progress: data?.[0] ? Number(data[0]) / 100 : 0, // Convert basis points to percentage
-    currentMarketCap: data?.[1] ? formatEther(data[1]) : "0",
-    graduationMarketCap: data?.[2] ? formatEther(data[2]) : "0",
+    currentMarketCap: data?.[1] ? formatEther(data[1]) : '0',
+    graduationMarketCap: data?.[2] ? formatEther(data[2]) : '0',
     isLoading,
     error,
     refetch,
@@ -162,7 +157,7 @@ export function useIsGraduated(tokenAddress: string) {
   const { data, isLoading, refetch } = useReadContract({
     address: contracts.curve,
     abi: curveAbi,
-    functionName: "isGraduated",
+    functionName: 'isGraduated',
     args: [tokenAddress as Address],
     query: {
       enabled: !!tokenAddress,
@@ -184,7 +179,7 @@ export function useCurveState(tokenAddress: string) {
   const { data, isLoading, error, refetch } = useReadContract({
     address: contracts.curve,
     abi: curveAbi,
-    functionName: "curves",
+    functionName: 'curves',
     args: [tokenAddress as Address],
     query: {
       enabled: !!tokenAddress,
@@ -192,11 +187,11 @@ export function useCurveState(tokenAddress: string) {
   });
 
   return {
-    realReserve: data?.[0] ? formatEther(data[0]) : "0",
-    virtualReserve: data?.[1] ? formatEther(data[1]) : "0",
+    realReserve: data?.[0] ? formatEther(data[0]) : '0',
+    virtualReserve: data?.[1] ? formatEther(data[1]) : '0',
     k: data?.[2] || 0n,
-    realTokenSupply: data?.[3] ? formatEther(data[3]) : "0",
-    virtualTokenSupply: data?.[4] ? formatEther(data[4]) : "0",
+    realTokenSupply: data?.[3] ? formatEther(data[3]) : '0',
+    virtualTokenSupply: data?.[4] ? formatEther(data[4]) : '0',
     graduated: data?.[5] || false,
     isLoading,
     error,
@@ -216,49 +211,49 @@ export function useBuyToken() {
 
   const { writeContractAsync } = useWriteContract();
 
-  const buyToken = useCallback(async (
-    tokenAddress: string,
-    monAmount: string,
-    slippagePercent: number = 1
-  ) => {
-    if (!address || !publicClient) {
-      throw new Error("Wallet not connected");
-    }
+  const buyToken = useCallback(
+    async (tokenAddress: string, monAmount: string, slippagePercent: number = 1) => {
+      if (!address || !publicClient) {
+        throw new Error('Wallet not connected');
+      }
 
-    setIsPending(true);
-    setError(null);
+      setIsPending(true);
+      setError(null);
 
-    try {
-      const amountIn = parseEther(monAmount);
+      try {
+        const amountIn = parseEther(monAmount);
 
-      // Get quote first
-      const quote = await publicClient.readContract({
-        address: contracts.bondingCurveRouter,
-        abi: bondingCurveRouterAbi,
-        functionName: "getAmountOutWithFee",
-        args: [tokenAddress as Address, amountIn, true],
-      });
+        // Get quote first
+        const quote = await publicClient.readContract({
+          address: contracts.bondingCurveRouter,
+          abi: bondingCurveRouterAbi,
+          functionName: 'getAmountOutWithFee',
+          args: [tokenAddress as Address, amountIn, true],
+        });
 
-      const amountOutMin = calculateMinOutput(quote[0], slippagePercent);
-      const deadline = getDeadline();
+        const amountOutMin = calculateMinOutput(quote[0], slippagePercent);
+        const deadline = getDeadline();
 
-      // Execute buy
-      const hash = await writeContractAsync({
-        address: contracts.bondingCurveRouter,
-        abi: bondingCurveRouterAbi,
-        functionName: "buy",
-        args: [tokenAddress as Address, amountOutMin, address, deadline],
-        value: amountIn,
-      });
+        // Execute buy
+        const hash = await writeContractAsync({
+          address: contracts.bondingCurveRouter,
+          abi: bondingCurveRouterAbi,
+          functionName: 'buy',
+          args: [tokenAddress as Address, amountOutMin, address, deadline],
+          value: amountIn,
+        });
 
-      setIsPending(false);
-      return { hash, amountOut: formatEther(quote[0]) };
-    } catch (err) {
-      setError(err as Error);
-      setIsPending(false);
-      throw err;
-    }
-  }, [address, contracts, publicClient, writeContractAsync]);
+        setIsPending(false);
+
+        return { hash, amountOut: formatEther(quote[0]) };
+      } catch (err) {
+        setError(err as Error);
+        setIsPending(false);
+        throw err;
+      }
+    },
+    [address, contracts, publicClient, writeContractAsync]
+  );
 
   return {
     buyToken,
@@ -279,73 +274,77 @@ export function useSellToken() {
 
   const { writeContractAsync } = useWriteContract();
 
-  const approveToken = useCallback(async (tokenAddress: string, amount: bigint) => {
-    const hash = await writeContractAsync({
-      address: tokenAddress as Address,
-      abi: erc20Abi,
-      functionName: "approve",
-      args: [contracts.bondingCurveRouter, amount],
-    });
-    return hash;
-  }, [contracts, writeContractAsync]);
-
-  const sellToken = useCallback(async (
-    tokenAddress: string,
-    tokenAmount: string,
-    slippagePercent: number = 1
-  ) => {
-    if (!address || !publicClient) {
-      throw new Error("Wallet not connected");
-    }
-
-    setIsPending(true);
-    setError(null);
-
-    try {
-      const amountIn = parseEther(tokenAmount);
-
-      // Check allowance
-      const allowance = await publicClient.readContract({
+  const approveToken = useCallback(
+    async (tokenAddress: string, amount: bigint) => {
+      const hash = await writeContractAsync({
         address: tokenAddress as Address,
         abi: erc20Abi,
-        functionName: "allowance",
-        args: [address, contracts.bondingCurveRouter],
+        functionName: 'approve',
+        args: [contracts.bondingCurveRouter, amount],
       });
 
-      // Approve if needed
-      if (allowance < amountIn) {
-        await approveToken(tokenAddress, amountIn);
-        // Wait a bit for approval to be confirmed
-        await new Promise(resolve => setTimeout(resolve, 2000));
+      return hash;
+    },
+    [contracts, writeContractAsync]
+  );
+
+  const sellToken = useCallback(
+    async (tokenAddress: string, tokenAmount: string, slippagePercent: number = 1) => {
+      if (!address || !publicClient) {
+        throw new Error('Wallet not connected');
       }
 
-      // Get quote
-      const quote = await publicClient.readContract({
-        address: contracts.bondingCurveRouter,
-        abi: bondingCurveRouterAbi,
-        functionName: "getAmountOutWithFee",
-        args: [tokenAddress as Address, amountIn, false],
-      });
+      setIsPending(true);
+      setError(null);
 
-      const amountOutMin = calculateMinOutput(quote[0], slippagePercent);
-      const deadline = getDeadline();
+      try {
+        const amountIn = parseEther(tokenAmount);
 
-      // Execute sell
-      const hash = await writeContractAsync({
-        address: contracts.bondingCurveRouter,
-        abi: bondingCurveRouterAbi,
-        functionName: "sell",
-        args: [tokenAddress as Address, amountIn, amountOutMin, address, deadline],
-      });
+        // Check allowance
+        const allowance = await publicClient.readContract({
+          address: tokenAddress as Address,
+          abi: erc20Abi,
+          functionName: 'allowance',
+          args: [address, contracts.bondingCurveRouter],
+        });
 
-      setIsPending(false);
-      return { hash, amountOut: formatEther(quote[0]) };
-    } catch (err) {
-      setError(err as Error);
-      setIsPending(false);
-      throw err;
-    }
-  }, [address, contracts, publicClient, writeContractAsync, approveToken]);
+        // Approve if needed
+        if (allowance < amountIn) {
+          await approveToken(tokenAddress, amountIn);
+          // Wait a bit for approval to be confirmed
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+
+        // Get quote
+        const quote = await publicClient.readContract({
+          address: contracts.bondingCurveRouter,
+          abi: bondingCurveRouterAbi,
+          functionName: 'getAmountOutWithFee',
+          args: [tokenAddress as Address, amountIn, false],
+        });
+
+        const amountOutMin = calculateMinOutput(quote[0], slippagePercent);
+        const deadline = getDeadline();
+
+        // Execute sell
+        const hash = await writeContractAsync({
+          address: contracts.bondingCurveRouter,
+          abi: bondingCurveRouterAbi,
+          functionName: 'sell',
+          args: [tokenAddress as Address, amountIn, amountOutMin, address, deadline],
+        });
+
+        setIsPending(false);
+
+        return { hash, amountOut: formatEther(quote[0]) };
+      } catch (err) {
+        setError(err as Error);
+        setIsPending(false);
+        throw err;
+      }
+    },
+    [address, contracts, publicClient, writeContractAsync, approveToken]
+  );
 
   return {
     sellToken,
@@ -366,38 +365,38 @@ export function useDexBuy() {
 
   const { writeContractAsync } = useWriteContract();
 
-  const buyOnDex = useCallback(async (
-    tokenAddress: string,
-    monAmount: string,
-    amountOutMin: bigint = 0n
-  ) => {
-    if (!address) {
-      throw new Error("Wallet not connected");
-    }
+  const buyOnDex = useCallback(
+    async (tokenAddress: string, monAmount: string, amountOutMin: bigint = 0n) => {
+      if (!address) {
+        throw new Error('Wallet not connected');
+      }
 
-    setIsPending(true);
-    setError(null);
+      setIsPending(true);
+      setError(null);
 
-    try {
-      const amountIn = parseEther(monAmount);
-      const deadline = getDeadline();
+      try {
+        const amountIn = parseEther(monAmount);
+        const deadline = getDeadline();
 
-      const hash = await writeContractAsync({
-        address: contracts.dexRouter,
-        abi: dexRouterAbi,
-        functionName: "buy",
-        args: [tokenAddress as Address, amountOutMin, address, deadline],
-        value: amountIn,
-      });
+        const hash = await writeContractAsync({
+          address: contracts.dexRouter,
+          abi: dexRouterAbi,
+          functionName: 'buy',
+          args: [tokenAddress as Address, amountOutMin, address, deadline],
+          value: amountIn,
+        });
 
-      setIsPending(false);
-      return { hash };
-    } catch (err) {
-      setError(err as Error);
-      setIsPending(false);
-      throw err;
-    }
-  }, [address, contracts, writeContractAsync]);
+        setIsPending(false);
+
+        return { hash };
+      } catch (err) {
+        setError(err as Error);
+        setIsPending(false);
+        throw err;
+      }
+    },
+    [address, contracts, writeContractAsync]
+  );
 
   return {
     buyOnDex,
@@ -417,49 +416,49 @@ export function useDexSell() {
 
   const { writeContractAsync } = useWriteContract();
 
-  const sellOnDex = useCallback(async (
-    tokenAddress: string,
-    tokenAmount: string,
-    amountOutMin: bigint = 0n
-  ) => {
-    if (!address) {
-      throw new Error("Wallet not connected");
-    }
+  const sellOnDex = useCallback(
+    async (tokenAddress: string, tokenAmount: string, amountOutMin: bigint = 0n) => {
+      if (!address) {
+        throw new Error('Wallet not connected');
+      }
 
-    setIsPending(true);
-    setError(null);
+      setIsPending(true);
+      setError(null);
 
-    try {
-      const amountIn = parseEther(tokenAmount);
-      const deadline = getDeadline();
+      try {
+        const amountIn = parseEther(tokenAmount);
+        const deadline = getDeadline();
 
-      // First approve the DEX router
-      await writeContractAsync({
-        address: tokenAddress as Address,
-        abi: erc20Abi,
-        functionName: "approve",
-        args: [contracts.dexRouter, amountIn],
-      });
+        // First approve the DEX router
+        await writeContractAsync({
+          address: tokenAddress as Address,
+          abi: erc20Abi,
+          functionName: 'approve',
+          args: [contracts.dexRouter, amountIn],
+        });
 
-      // Wait for approval
-      await new Promise(resolve => setTimeout(resolve, 2000));
+        // Wait for approval
+        await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // Execute sell
-      const hash = await writeContractAsync({
-        address: contracts.dexRouter,
-        abi: dexRouterAbi,
-        functionName: "sell",
-        args: [tokenAddress as Address, amountIn, amountOutMin, address, deadline],
-      });
+        // Execute sell
+        const hash = await writeContractAsync({
+          address: contracts.dexRouter,
+          abi: dexRouterAbi,
+          functionName: 'sell',
+          args: [tokenAddress as Address, amountIn, amountOutMin, address, deadline],
+        });
 
-      setIsPending(false);
-      return { hash };
-    } catch (err) {
-      setError(err as Error);
-      setIsPending(false);
-      throw err;
-    }
-  }, [address, contracts, writeContractAsync]);
+        setIsPending(false);
+
+        return { hash };
+      } catch (err) {
+        setError(err as Error);
+        setIsPending(false);
+        throw err;
+      }
+    },
+    [address, contracts, writeContractAsync]
+  );
 
   return {
     sellOnDex,
@@ -479,49 +478,47 @@ export function useSmartTrade() {
   const contracts = getContracts(chainId);
   const publicClient = usePublicClient();
 
-  const smartBuy = useCallback(async (
-    tokenAddress: string,
-    monAmount: string,
-    slippagePercent: number = 1
-  ) => {
-    if (!publicClient) throw new Error("Client not available");
+  const smartBuy = useCallback(
+    async (tokenAddress: string, monAmount: string, slippagePercent: number = 1) => {
+      if (!publicClient) throw new Error('Client not available');
 
-    // Check if graduated
-    const isGraduated = await publicClient.readContract({
-      address: contracts.curve,
-      abi: curveAbi,
-      functionName: "isGraduated",
-      args: [tokenAddress as Address],
-    });
+      // Check if graduated
+      const isGraduated = await publicClient.readContract({
+        address: contracts.curve,
+        abi: curveAbi,
+        functionName: 'isGraduated',
+        args: [tokenAddress as Address],
+      });
 
-    if (isGraduated) {
-      return buyOnDex(tokenAddress, monAmount);
-    } else {
-      return buyToken(tokenAddress, monAmount, slippagePercent);
-    }
-  }, [publicClient, contracts, buyToken, buyOnDex]);
+      if (isGraduated) {
+        return buyOnDex(tokenAddress, monAmount);
+      } else {
+        return buyToken(tokenAddress, monAmount, slippagePercent);
+      }
+    },
+    [publicClient, contracts, buyToken, buyOnDex]
+  );
 
-  const smartSell = useCallback(async (
-    tokenAddress: string,
-    tokenAmount: string,
-    slippagePercent: number = 1
-  ) => {
-    if (!publicClient) throw new Error("Client not available");
+  const smartSell = useCallback(
+    async (tokenAddress: string, tokenAmount: string, slippagePercent: number = 1) => {
+      if (!publicClient) throw new Error('Client not available');
 
-    // Check if graduated
-    const isGraduated = await publicClient.readContract({
-      address: contracts.curve,
-      abi: curveAbi,
-      functionName: "isGraduated",
-      args: [tokenAddress as Address],
-    });
+      // Check if graduated
+      const isGraduated = await publicClient.readContract({
+        address: contracts.curve,
+        abi: curveAbi,
+        functionName: 'isGraduated',
+        args: [tokenAddress as Address],
+      });
 
-    if (isGraduated) {
-      return sellOnDex(tokenAddress, tokenAmount);
-    } else {
-      return sellToken(tokenAddress, tokenAmount, slippagePercent);
-    }
-  }, [publicClient, contracts, sellToken, sellOnDex]);
+      if (isGraduated) {
+        return sellOnDex(tokenAddress, tokenAmount);
+      } else {
+        return sellToken(tokenAddress, tokenAmount, slippagePercent);
+      }
+    },
+    [publicClient, contracts, sellToken, sellOnDex]
+  );
 
   return {
     smartBuy,

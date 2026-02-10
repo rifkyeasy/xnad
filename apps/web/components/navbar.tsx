@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Navbar as HeroUINavbar,
@@ -8,20 +8,21 @@ import {
   NavbarBrand,
   NavbarItem,
   NavbarMenuItem,
-} from "@heroui/navbar";
-import { Link } from "@heroui/link";
-import { link as linkStyles } from "@heroui/theme";
-import { Chip } from "@heroui/chip";
-import { Tooltip } from "@heroui/tooltip";
-import NextLink from "next/link";
-import clsx from "clsx";
-import { useChainId } from "wagmi";
+} from '@heroui/navbar';
+import { Link } from '@heroui/link';
+import { link as linkStyles } from '@heroui/theme';
+import { Chip } from '@heroui/chip';
+import { Tooltip } from '@heroui/tooltip';
+import NextLink from 'next/link';
+import clsx from 'clsx';
+import { useChainId } from 'wagmi';
+import Image from 'next/image';
 
-import { siteConfig } from "@/config/site";
-import { MONAD_TESTNET } from "@/config/contracts";
-import { ThemeSwitch } from "@/components/theme-switch";
-import { WalletButton } from "@/components/wallet-button";
-import { GithubIcon, TwitterIcon, CartelLogo } from "@/components/icons";
+import { siteConfig } from '@/config/site';
+import { MONAD_TESTNET } from '@/config/contracts';
+import { ThemeSwitch } from '@/components/theme-switch';
+import { WalletButton } from '@/components/wallet-button';
+import { GithubIcon, TwitterIcon } from '@/components/icons';
 
 export const Navbar = () => {
   const chainId = useChainId();
@@ -32,18 +33,11 @@ export const Navbar = () => {
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
           <NextLink className="flex justify-start items-center gap-2" href="/">
-            <CartelLogo />
-            <p className="font-bold text-inherit">Agent Cartel</p>
-            <Chip color="warning" size="sm" variant="flat">
-              Beta
-            </Chip>
+            <Image alt="logo" height={35} src={'/android-chrome-192x192.png'} width={35} />
+            <p className="font-bold text-inherit">XNad</p>
             {isTestnet && (
               <Tooltip content="Connected to Monad Testnet. Get MON from faucet.">
-                <Link
-                  href={MONAD_TESTNET.faucetUrl}
-                  isExternal
-                  className="no-underline"
-                >
+                <Link isExternal className="no-underline" href={MONAD_TESTNET.faucetUrl}>
                   <Chip color="secondary" size="sm" variant="flat">
                     Testnet
                   </Chip>
@@ -57,8 +51,8 @@ export const Navbar = () => {
             <NavbarItem key={item.href}>
               <NextLink
                 className={clsx(
-                  linkStyles({ color: "foreground" }),
-                  "data-[active=true]:text-primary data-[active=true]:font-medium",
+                  linkStyles({ color: 'foreground' }),
+                  'data-[active=true]:text-primary data-[active=true]:font-medium'
                 )}
                 color="foreground"
                 href={item.href}
@@ -70,10 +64,7 @@ export const Navbar = () => {
         </ul>
       </NavbarContent>
 
-      <NavbarContent
-        className="hidden sm:flex basis-1/5 sm:basis-full"
-        justify="end"
-      >
+      <NavbarContent className="hidden sm:flex basis-1/5 sm:basis-full" justify="end">
         <NavbarItem className="hidden sm:flex gap-2">
           <Link isExternal aria-label="Twitter" href={siteConfig.links.twitter}>
             <TwitterIcon className="text-default-500" />

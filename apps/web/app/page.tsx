@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
-import { Chip } from "@heroui/chip";
-import { Divider } from "@heroui/divider";
-import { Button } from "@heroui/button";
-import { useAccount, useBalance } from "wagmi";
-import { useRouter } from "next/navigation";
-import { formatEther } from "viem";
+import { Card, CardHeader, CardBody, CardFooter } from '@heroui/card';
+import { Chip } from '@heroui/chip';
+import { Divider } from '@heroui/divider';
+import { Button } from '@heroui/button';
+import { useAccount, useBalance } from 'wagmi';
+import { useRouter } from 'next/navigation';
+import { formatEther } from 'viem';
 
-import { title } from "@/components/primitives";
-import { useAgentStore } from "@/stores/agent";
-import { useVaultFactory, useVault } from "@/hooks/useVault";
+import { title } from '@/components/primitives';
+import { useAgentStore } from '@/stores/agent';
+import { useVaultFactory, useVault } from '@/hooks/useVault';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -23,24 +23,21 @@ export default function Dashboard() {
 
   // Calculate portfolio stats
   const totalPositionValue = positions.reduce(
-    (sum, p) => sum + parseFloat(p.currentValue || "0"),
+    (sum, p) => sum + parseFloat(p.currentValue || '0'),
     0
   );
-  const totalPnl = positions.reduce(
-    (sum, p) => sum + parseFloat(p.unrealizedPnl || "0"),
-    0
-  );
+  const totalPnl = positions.reduce((sum, p) => sum + parseFloat(p.unrealizedPnl || '0'), 0);
 
   const strategyLabels = {
-    CONSERVATIVE: "Conservative",
-    BALANCED: "Balanced",
-    AGGRESSIVE: "Aggressive",
+    CONSERVATIVE: 'Conservative',
+    BALANCED: 'Balanced',
+    AGGRESSIVE: 'Aggressive',
   };
 
   const strategyColors = {
-    CONSERVATIVE: "success" as const,
-    BALANCED: "primary" as const,
-    AGGRESSIVE: "danger" as const,
+    CONSERVATIVE: 'success' as const,
+    BALANCED: 'primary' as const,
+    AGGRESSIVE: 'danger' as const,
   };
 
   return (
@@ -64,7 +61,7 @@ export default function Dashboard() {
           <CardBody className="text-center py-4">
             <p className="text-default-500 text-sm">Wallet Balance</p>
             <p className="text-2xl font-bold">
-              {balance ? parseFloat(formatEther(balance.value)).toFixed(4) : "0"} MON
+              {balance ? parseFloat(formatEther(balance.value)).toFixed(4) : '0'} MON
             </p>
           </CardBody>
         </Card>
@@ -72,23 +69,22 @@ export default function Dashboard() {
           <CardBody className="text-center py-4">
             <p className="text-default-500 text-sm">Vault Balance</p>
             <p className="text-2xl font-bold">
-              {vaultBalance ? parseFloat(vaultBalance).toFixed(4) : "0"} MON
+              {vaultBalance ? parseFloat(vaultBalance).toFixed(4) : '0'} MON
             </p>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center py-4">
             <p className="text-default-500 text-sm">Positions Value</p>
-            <p className="text-2xl font-bold">
-              {totalPositionValue.toFixed(4)} MON
-            </p>
+            <p className="text-2xl font-bold">{totalPositionValue.toFixed(4)} MON</p>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center py-4">
             <p className="text-default-500 text-sm">Unrealized P&L</p>
-            <p className={`text-2xl font-bold ${totalPnl >= 0 ? "text-success" : "text-danger"}`}>
-              {totalPnl >= 0 ? "+" : ""}{totalPnl.toFixed(4)} MON
+            <p className={`text-2xl font-bold ${totalPnl >= 0 ? 'text-success' : 'text-danger'}`}>
+              {totalPnl >= 0 ? '+' : ''}
+              {totalPnl.toFixed(4)} MON
             </p>
           </CardBody>
         </Card>
@@ -102,7 +98,9 @@ export default function Dashboard() {
             <p className="text-default-500 text-sm">Your trading agent configuration</p>
           </div>
           {autoTrade && (
-            <Chip color="success" variant="dot">Active</Chip>
+            <Chip color="success" variant="dot">
+              Active
+            </Chip>
           )}
         </CardHeader>
         <Divider />
@@ -116,7 +114,7 @@ export default function Dashboard() {
               <p className="text-default-500 mb-4">
                 Set up your AI trading agent to start automated trading
               </p>
-              <Button color="primary" size="lg" onPress={() => router.push("/agent")}>
+              <Button color="primary" size="lg" onPress={() => router.push('/agent')}>
                 Set Up Agent
               </Button>
             </div>
@@ -126,12 +124,12 @@ export default function Dashboard() {
                 <div className="p-3 bg-default-100 rounded-lg">
                   <p className="text-sm text-default-500">Strategy</p>
                   <p className="font-bold">
-                    {selectedStrategy ? strategyLabels[selectedStrategy] : "Not set"}
+                    {selectedStrategy ? strategyLabels[selectedStrategy] : 'Not set'}
                   </p>
                 </div>
                 <div className="p-3 bg-default-100 rounded-lg">
                   <p className="text-sm text-default-500">Auto-Trade</p>
-                  <p className="font-bold">{autoTrade ? "Enabled" : "Disabled"}</p>
+                  <p className="font-bold">{autoTrade ? 'Enabled' : 'Disabled'}</p>
                 </div>
                 <div className="p-3 bg-default-100 rounded-lg">
                   <p className="text-sm text-default-500">Positions</p>
@@ -140,7 +138,9 @@ export default function Dashboard() {
                 <div className="p-3 bg-default-100 rounded-lg">
                   <p className="text-sm text-default-500">Vault</p>
                   <p className="font-mono text-sm truncate">
-                    {vaultAddress ? `${vaultAddress.slice(0, 6)}...${vaultAddress.slice(-4)}` : "Not created"}
+                    {vaultAddress
+                      ? `${vaultAddress.slice(0, 6)}...${vaultAddress.slice(-4)}`
+                      : 'Not created'}
                   </p>
                 </div>
               </div>
@@ -148,17 +148,10 @@ export default function Dashboard() {
           )}
         </CardBody>
         <CardFooter className="gap-2">
-          <Button
-            color="primary"
-            className="flex-1"
-            onPress={() => router.push("/agent")}
-          >
-            {hasVault ? "Manage Agent" : "Set Up Agent"}
+          <Button className="flex-1" color="primary" onPress={() => router.push('/agent')}>
+            {hasVault ? 'Manage Agent' : 'Set Up Agent'}
           </Button>
-          <Button
-            variant="flat"
-            onPress={() => router.push("/trade")}
-          >
+          <Button variant="flat" onPress={() => router.push('/trade')}>
             Manual Trade
           </Button>
         </CardFooter>
@@ -173,7 +166,7 @@ export default function Dashboard() {
             <p className="text-sm text-default-500">
               Get personalized strategy based on your X profile
             </p>
-            <Button variant="flat" size="sm" onPress={() => router.push("/agent")}>
+            <Button size="sm" variant="flat" onPress={() => router.push('/agent')}>
               Analyze
             </Button>
           </CardBody>
@@ -182,10 +175,8 @@ export default function Dashboard() {
           <CardBody className="text-center gap-3">
             <span className="text-3xl">📈</span>
             <h3 className="font-bold">Trade Tokens</h3>
-            <p className="text-sm text-default-500">
-              Buy and sell tokens on nad.fun bonding curve
-            </p>
-            <Button variant="flat" size="sm" onPress={() => router.push("/trade")}>
+            <p className="text-sm text-default-500">Buy and sell tokens on nad.fun bonding curve</p>
+            <Button size="sm" variant="flat" onPress={() => router.push('/trade')}>
               Trade
             </Button>
           </CardBody>
@@ -194,16 +185,8 @@ export default function Dashboard() {
           <CardBody className="text-center gap-3">
             <span className="text-3xl">🔗</span>
             <h3 className="font-bold">nad.fun</h3>
-            <p className="text-sm text-default-500">
-              Explore tokens on the nad.fun platform
-            </p>
-            <Button
-              variant="flat"
-              size="sm"
-              as="a"
-              href="https://nad.fun"
-              target="_blank"
-            >
+            <p className="text-sm text-default-500">Explore tokens on the nad.fun platform</p>
+            <Button as="a" href="https://nad.fun" size="sm" target="_blank" variant="flat">
               Explore
             </Button>
           </CardBody>

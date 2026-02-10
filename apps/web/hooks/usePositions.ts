@@ -1,10 +1,11 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { useAccount } from "wagmi";
-import type { Position } from "@/stores/agent";
+import type { Position } from '@/stores/agent';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
+import { useState, useEffect, useCallback } from 'react';
+import { useAccount } from 'wagmi';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
 interface PositionData {
   positions: Position[];
@@ -51,7 +52,9 @@ export function usePositions(): PositionData {
 
     try {
       // Try indexer first (via backend proxy)
-      const indexerRes = await fetch(`${BACKEND_URL}/api/indexer/vaults/${address.toLowerCase()}/positions`);
+      const indexerRes = await fetch(
+        `${BACKEND_URL}/api/indexer/vaults/${address.toLowerCase()}/positions`
+      );
 
       if (indexerRes.ok) {
         const indexerData = (await indexerRes.json()) as IndexerPosition[];
@@ -64,7 +67,7 @@ export function usePositions(): PositionData {
             const costBasis = (Number(p.totalCostBasis) / 1e18).toString();
             // Estimate current value as cost basis (real price requires nad.fun API)
             const currentValue = costBasis;
-            const unrealizedPnl = "0";
+            const unrealizedPnl = '0';
             const unrealizedPnlPct = 0;
 
             return {
@@ -79,13 +82,15 @@ export function usePositions(): PositionData {
           });
 
         setPositions(transformedPositions);
+
         return;
       }
 
       // Fallback to backend positions API
       const backendRes = await fetch(`${BACKEND_URL}/api/positions/${address}`);
+
       if (!backendRes.ok) {
-        throw new Error("Failed to fetch positions");
+        throw new Error('Failed to fetch positions');
       }
 
       const data = (await backendRes.json()) as BackendPosition[];
@@ -101,8 +106,8 @@ export function usePositions(): PositionData {
 
       setPositions(transformedPositions);
     } catch (err) {
-      console.error("Error fetching positions:", err);
-      setError(err instanceof Error ? err.message : "Unknown error");
+      console.error('Error fetching positions:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
     }
@@ -116,6 +121,7 @@ export function usePositions(): PositionData {
   // Refetch every 30 seconds
   useEffect(() => {
     const interval = setInterval(fetchPositions, 30000);
+
     return () => clearInterval(interval);
   }, [fetchPositions]);
 
@@ -157,6 +163,7 @@ export function useUserSettings(): SettingsData {
     const fetchSettings = async () => {
       try {
         const res = await fetch(`${BACKEND_URL}/api/users/${address}`);
+
         if (!res.ok) return;
 
         const user = (await res.json()) as {
@@ -173,7 +180,7 @@ export function useUserSettings(): SettingsData {
           takeProfitPercent: user.takeProfitPercent ?? null,
         });
       } catch (err) {
-        console.error("Error fetching user settings:", err);
+        console.error('Error fetching user settings:', err);
       }
     };
 
@@ -188,19 +195,19 @@ export function useUserSettings(): SettingsData {
 
       try {
         const res = await fetch(`${BACKEND_URL}/api/users/${address}/strategy`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updates),
         });
 
         if (!res.ok) {
-          throw new Error("Failed to update settings");
+          throw new Error('Failed to update settings');
         }
 
         // Update local state
         setSettings((prev) => ({ ...prev, ...updates }));
       } catch (err) {
-        console.error("Error updating settings:", err);
+        console.error('Error updating settings:', err);
         throw err;
       } finally {
         setIsLoading(false);
@@ -220,7 +227,7 @@ interface TradeHistory {
   id: string;
   tokenAddress: string;
   tokenSymbol: string;
-  action: "BUY" | "SELL";
+  action: 'BUY' | 'SELL';
   amountIn: string;
   amountOut: string;
   txHash: string;
@@ -273,29 +280,32 @@ export function useTradeHistory(limit = 20): TradesData {
           id: t.id,
           tokenAddress: t.token,
           tokenSymbol: t.token.slice(0, 6),
-          action: t.isBuy ? "BUY" : "SELL",
+          action: t.isBuy ? 'BUY' : 'SELL',
           amountIn: (Number(t.amountIn) / 1e18).toFixed(6),
           amountOut: (Number(t.amountOut) / 1e18).toFixed(6),
           txHash: t.txHash,
-          status: "COMPLETED",
+          status: 'COMPLETED',
           createdAt: new Date(Number(t.blockTimestamp) * 1000).toISOString(),
         }));
 
         setTrades(transformedTrades);
+
         return;
       }
 
       // Fallback to backend trades API
       const backendRes = await fetch(`${BACKEND_URL}/api/trades/${address}?limit=${limit}`);
+
       if (!backendRes.ok) {
-        throw new Error("Failed to fetch trades");
+        throw new Error('Failed to fetch trades');
       }
 
       const data = (await backendRes.json()) as TradeHistory[];
+
       setTrades(data);
     } catch (err) {
-      console.error("Error fetching trades:", err);
-      setError(err instanceof Error ? err.message : "Unknown error");
+      console.error('Error fetching trades:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
     }
@@ -350,6 +360,7 @@ export function useVaultInfo(vaultAddress?: string): VaultData {
 
       if (res.ok) {
         const data = await res.json();
+
         setVault({
           id: data.id,
           owner: data.owner,
@@ -363,11 +374,11 @@ export function useVaultInfo(vaultAddress?: string): VaultData {
       } else if (res.status === 404) {
         setVault(null);
       } else {
-        throw new Error("Failed to fetch vault");
+        throw new Error('Failed to fetch vault');
       }
     } catch (err) {
-      console.error("Error fetching vault:", err);
-      setError(err instanceof Error ? err.message : "Unknown error");
+      console.error('Error fetching vault:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
     }
@@ -380,6 +391,7 @@ export function useVaultInfo(vaultAddress?: string): VaultData {
   // Refetch every 15 seconds
   useEffect(() => {
     const interval = setInterval(fetchVault, 15000);
+
     return () => clearInterval(interval);
   }, [fetchVault]);
 

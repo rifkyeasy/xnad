@@ -11,7 +11,8 @@ export const NADFUN_CONTRACTS = {
 
 // User vault contracts (deployed by us on Monad testnet)
 export const VAULT_CONTRACTS = {
-  vaultFactory: process.env.NEXT_PUBLIC_VAULT_FACTORY_ADDRESS || '0x164B4eF50c0C8C75Dc6F571e62731C4Fa0C6283A',
+  vaultFactory:
+    process.env.NEXT_PUBLIC_VAULT_FACTORY_ADDRESS || '0x164B4eF50c0C8C75Dc6F571e62731C4Fa0C6283A',
 } as const;
 
 // Testnet tokens (mirrored from mainnet)
@@ -63,7 +64,8 @@ export const STRATEGY_CONFIG = {
     riskLevels: ['low'],
     stopLoss: 0.1, // 10%
     takeProfit: 0.3, // 30%
-    description: 'Low risk, stable returns. Trades only high-confidence signals on established tokens.',
+    description:
+      'Low risk, stable returns. Trades only high-confidence signals on established tokens.',
   },
   [StrategyType.BALANCED]: {
     name: 'Balanced',
@@ -81,7 +83,8 @@ export const STRATEGY_CONFIG = {
     riskLevels: ['low', 'medium', 'high'],
     stopLoss: 0.35, // 35%
     takeProfit: 1.0, // 100%
-    description: 'High risk, high reward. Early entry on emerging tokens with potential for large gains.',
+    description:
+      'High risk, high reward. Early entry on emerging tokens with potential for large gains.',
   },
 } as const;
 

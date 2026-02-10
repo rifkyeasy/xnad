@@ -1,15 +1,10 @@
-"use client";
+'use client';
 
-import { useAccount, useConnect, useDisconnect, useBalance } from "wagmi";
-import { Button } from "@heroui/button";
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/dropdown";
-import { Chip } from "@heroui/chip";
-import { formatEther } from "viem";
+import { useAccount, useConnect, useDisconnect, useBalance } from 'wagmi';
+import { Button } from '@heroui/button';
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@heroui/dropdown';
+import { Chip } from '@heroui/chip';
+import { formatEther } from 'viem';
 
 export function WalletButton() {
   const { address, isConnected, isConnecting } = useAccount();
@@ -17,21 +12,19 @@ export function WalletButton() {
   const { disconnect } = useDisconnect();
   const { data: balance } = useBalance({ address });
 
-  const truncatedAddress = address
-    ? `${address.slice(0, 6)}...${address.slice(-4)}`
-    : "";
+  const truncatedAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '';
 
   const formattedBalance = balance
     ? `${parseFloat(formatEther(balance.value)).toFixed(4)} MON`
-    : "0 MON";
+    : '0 MON';
 
   if (isConnected && address) {
     return (
       <Dropdown>
         <DropdownTrigger>
-          <Button variant="flat" color="success">
+          <Button color="success" variant="flat">
             <span className="hidden sm:inline mr-2">{formattedBalance}</span>
-            <Chip size="sm" variant="dot" color="success">
+            <Chip color="success" size="sm" variant="dot">
               {truncatedAddress}
             </Chip>
           </Button>
@@ -49,11 +42,7 @@ export function WalletButton() {
               <span className="text-xs text-default-500 font-mono">{truncatedAddress}</span>
             </div>
           </DropdownItem>
-          <DropdownItem
-            key="disconnect"
-            color="danger"
-            onPress={() => disconnect()}
-          >
+          <DropdownItem key="disconnect" color="danger" onPress={() => disconnect()}>
             Disconnect
           </DropdownItem>
         </DropdownMenu>
@@ -65,15 +54,12 @@ export function WalletButton() {
     <Dropdown>
       <DropdownTrigger>
         <Button color="primary" isLoading={isConnecting}>
-          {isConnecting ? "Connecting..." : "Connect Wallet"}
+          {isConnecting ? 'Connecting...' : 'Connect Wallet'}
         </Button>
       </DropdownTrigger>
       <DropdownMenu aria-label="Connect wallet options">
         {connectors.map((connector) => (
-          <DropdownItem
-            key={connector.uid}
-            onPress={() => connect({ connector })}
-          >
+          <DropdownItem key={connector.uid} onPress={() => connect({ connector })}>
             {connector.name}
           </DropdownItem>
         ))}

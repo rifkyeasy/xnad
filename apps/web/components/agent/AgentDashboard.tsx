@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Chip } from "@heroui/chip";
-import { Switch } from "@heroui/switch";
-import { Input } from "@heroui/input";
+import { Card, CardBody, CardHeader } from '@heroui/card';
+import { Button } from '@heroui/button';
+import { Chip } from '@heroui/chip';
+import { Switch } from '@heroui/switch';
+import { Input } from '@heroui/input';
 import {
   Modal,
   ModalContent,
@@ -12,25 +12,26 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
-} from "@heroui/modal";
-import { Progress } from "@heroui/progress";
-import { Divider } from "@heroui/divider";
-import { Spinner } from "@heroui/spinner";
-import { useState } from "react";
-import { useVault } from "@/hooks/useVault";
-import { usePositions, useUserSettings, useTradeHistory } from "@/hooks/usePositions";
-import { useAgentStore, type Position } from "@/stores/agent";
+} from '@heroui/modal';
+import { Progress } from '@heroui/progress';
+import { Divider } from '@heroui/divider';
+import { Spinner } from '@heroui/spinner';
+import { useState } from 'react';
+
+import { useVault } from '@/hooks/useVault';
+import { usePositions, useUserSettings, useTradeHistory } from '@/hooks/usePositions';
+import { useAgentStore, type Position } from '@/stores/agent';
 
 const strategyColors = {
-  CONSERVATIVE: "success" as const,
-  BALANCED: "primary" as const,
-  AGGRESSIVE: "danger" as const,
+  CONSERVATIVE: 'success' as const,
+  BALANCED: 'primary' as const,
+  AGGRESSIVE: 'danger' as const,
 };
 
 const strategyLabels = {
-  CONSERVATIVE: "Conservative",
-  BALANCED: "Balanced",
-  AGGRESSIVE: "Aggressive",
+  CONSERVATIVE: 'Conservative',
+  BALANCED: 'Balanced',
+  AGGRESSIVE: 'Aggressive',
 };
 
 interface AgentDashboardProps {
@@ -50,7 +51,11 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
   } = useVault(vaultAddress);
 
   // Fetch real positions from backend
-  const { positions: backendPositions, isLoading: positionsLoading, refetch: refetchPositions } = usePositions();
+  const {
+    positions: backendPositions,
+    isLoading: positionsLoading,
+    refetch: refetchPositions,
+  } = usePositions();
 
   // Fetch and sync user settings with backend
   const { settings, isLoading: settingsLoading, updateSettings } = useUserSettings();
@@ -58,9 +63,7 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
   // Get trade history
   const { trades } = useTradeHistory(10);
 
-  const {
-    selectedStrategy,
-  } = useAgentStore();
+  const { selectedStrategy } = useAgentStore();
 
   // Use backend positions, fallback to store positions
   const positions = backendPositions.length > 0 ? backendPositions : [];
@@ -81,18 +84,18 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
   const depositModal = useDisclosure();
   const withdrawModal = useDisclosure();
 
-  const [depositAmount, setDepositAmount] = useState("");
-  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [depositAmount, setDepositAmount] = useState('');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
 
   const handleDeposit = async () => {
     if (!depositAmount) return;
     try {
       await deposit(depositAmount);
-      setDepositAmount("");
+      setDepositAmount('');
       depositModal.onClose();
       refetchBalance();
     } catch (error) {
-      console.error("Deposit failed:", error);
+      console.error('Deposit failed:', error);
     }
   };
 
@@ -100,26 +103,22 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
     if (!withdrawAmount) return;
     try {
       await withdraw(withdrawAmount);
-      setWithdrawAmount("");
+      setWithdrawAmount('');
       withdrawModal.onClose();
       refetchBalance();
     } catch (error) {
-      console.error("Withdraw failed:", error);
+      console.error('Withdraw failed:', error);
     }
   };
 
-  const strategyKey = selectedStrategy || (strategyType === 0 ? "CONSERVATIVE" : strategyType === 2 ? "AGGRESSIVE" : "BALANCED");
+  const strategyKey =
+    selectedStrategy ||
+    (strategyType === 0 ? 'CONSERVATIVE' : strategyType === 2 ? 'AGGRESSIVE' : 'BALANCED');
 
   // Calculate total portfolio value
-  const totalPositionValue = positions.reduce(
-    (sum, p) => sum + parseFloat(p.currentValue),
-    0
-  );
+  const totalPositionValue = positions.reduce((sum, p) => sum + parseFloat(p.currentValue), 0);
   const totalValue = parseFloat(balance) + totalPositionValue;
-  const totalPnl = positions.reduce(
-    (sum, p) => sum + parseFloat(p.unrealizedPnl),
-    0
-  );
+  const totalPnl = positions.reduce((sum, p) => sum + parseFloat(p.unrealizedPnl), 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -134,15 +133,16 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
               <p className="text-sm text-default-500">Vault Balance</p>
               <p className="text-2xl font-bold">{parseFloat(balance).toFixed(4)} MON</p>
             </div>
-            <Divider orientation="vertical" className="h-12" />
+            <Divider className="h-12" orientation="vertical" />
             <div>
               <p className="text-sm text-default-500">Total Value</p>
               <p className="text-2xl font-bold">{totalValue.toFixed(4)} MON</p>
             </div>
             <div>
               <p className="text-sm text-default-500">Unrealized P&L</p>
-              <p className={`text-xl font-bold ${totalPnl >= 0 ? "text-success" : "text-danger"}`}>
-                {totalPnl >= 0 ? "+" : ""}{totalPnl.toFixed(4)} MON
+              <p className={`text-xl font-bold ${totalPnl >= 0 ? 'text-success' : 'text-danger'}`}>
+                {totalPnl >= 0 ? '+' : ''}
+                {totalPnl.toFixed(4)} MON
               </p>
             </div>
           </div>
@@ -154,12 +154,12 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
               Withdraw
             </Button>
             <Button
-              color={paused ? "success" : "danger"}
+              color={paused ? 'success' : 'danger'}
+              isLoading={isConfirming}
               variant="flat"
               onPress={() => setPaused(!paused)}
-              isLoading={isConfirming}
             >
-              {paused ? "Resume Agent" : "Pause Agent"}
+              {paused ? 'Resume Agent' : 'Pause Agent'}
             </Button>
           </div>
         </CardBody>
@@ -169,7 +169,7 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
       <Card>
         <CardHeader className="flex justify-between items-center">
           <h2 className="text-lg font-bold">Current Positions</h2>
-          <Button size="sm" variant="flat" onPress={refetchPositions} isLoading={positionsLoading}>
+          <Button isLoading={positionsLoading} size="sm" variant="flat" onPress={refetchPositions}>
             Refresh
           </Button>
         </CardHeader>
@@ -206,10 +206,10 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
               </p>
             </div>
             <Switch
-              isSelected={autoTrade}
-              onValueChange={handleAutoTradeChange}
               color="success"
               isDisabled={settingsLoading}
+              isSelected={autoTrade}
+              onValueChange={handleAutoTradeChange}
             />
           </div>
 
@@ -223,10 +223,10 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
               </p>
             </div>
             <Switch
-              isSelected={autoRebalance}
-              onValueChange={handleAutoRebalanceChange}
               color="success"
               isDisabled={settingsLoading}
+              isSelected={autoRebalance}
+              onValueChange={handleAutoRebalanceChange}
             />
           </div>
 
@@ -236,13 +236,13 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
             <div>
               <p className="font-medium mb-2">Stop-Loss</p>
               <Chip color="danger" variant="flat">
-                {stopLossPercent ? `-${stopLossPercent}%` : "Not set"}
+                {stopLossPercent ? `-${stopLossPercent}%` : 'Not set'}
               </Chip>
             </div>
             <div>
               <p className="font-medium mb-2">Take-Profit</p>
               <Chip color="success" variant="flat">
-                {takeProfitPercent ? `+${takeProfitPercent}%` : "Not set"}
+                {takeProfitPercent ? `+${takeProfitPercent}%` : 'Not set'}
               </Chip>
             </div>
           </div>
@@ -255,23 +255,19 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
           <ModalHeader>Deposit MON</ModalHeader>
           <ModalBody>
             <Input
+              endContent={<span className="text-default-400">MON</span>}
               label="Amount"
               placeholder="0.0"
               type="number"
               value={depositAmount}
               onValueChange={setDepositAmount}
-              endContent={<span className="text-default-400">MON</span>}
             />
           </ModalBody>
           <ModalFooter>
             <Button variant="flat" onPress={depositModal.onClose}>
               Cancel
             </Button>
-            <Button
-              color="primary"
-              onPress={handleDeposit}
-              isLoading={isConfirming}
-            >
+            <Button color="primary" isLoading={isConfirming} onPress={handleDeposit}>
               Deposit
             </Button>
           </ModalFooter>
@@ -284,24 +280,20 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
           <ModalHeader>Withdraw MON</ModalHeader>
           <ModalBody>
             <Input
+              description={`Available: ${balance} MON`}
+              endContent={<span className="text-default-400">MON</span>}
               label="Amount"
               placeholder="0.0"
               type="number"
               value={withdrawAmount}
               onValueChange={setWithdrawAmount}
-              endContent={<span className="text-default-400">MON</span>}
-              description={`Available: ${balance} MON`}
             />
           </ModalBody>
           <ModalFooter>
             <Button variant="flat" onPress={withdrawModal.onClose}>
               Cancel
             </Button>
-            <Button
-              color="primary"
-              onPress={handleWithdraw}
-              isLoading={isConfirming}
-            >
+            <Button color="primary" isLoading={isConfirming} onPress={handleWithdraw}>
               Withdraw
             </Button>
           </ModalFooter>
@@ -330,18 +322,20 @@ function PositionCard({ position }: { position: Position }) {
         </p>
       </div>
       <div className="text-right">
-        <p className={`font-bold ${isProfit ? "text-success" : "text-danger"}`}>
-          {isProfit ? "+" : ""}{pnlPercent.toFixed(2)}%
+        <p className={`font-bold ${isProfit ? 'text-success' : 'text-danger'}`}>
+          {isProfit ? '+' : ''}
+          {pnlPercent.toFixed(2)}%
         </p>
-        <p className={`text-sm ${isProfit ? "text-success" : "text-danger"}`}>
-          {isProfit ? "+" : ""}{parseFloat(position.unrealizedPnl).toFixed(4)} MON
+        <p className={`text-sm ${isProfit ? 'text-success' : 'text-danger'}`}>
+          {isProfit ? '+' : ''}
+          {parseFloat(position.unrealizedPnl).toFixed(4)} MON
         </p>
       </div>
       <Progress
-        value={Math.min(Math.abs(pnlPercent), 100)}
-        color={isProfit ? "success" : "danger"}
         className="w-20"
+        color={isProfit ? 'success' : 'danger'}
         size="sm"
+        value={Math.min(Math.abs(pnlPercent), 100)}
       />
     </div>
   );
