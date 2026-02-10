@@ -8,6 +8,10 @@ build/
 .next/
 out/
 
+# Foundry
+apps/contracts/lib/
+apps/contracts/cache/
+
 # Prisma generated
 **/generated/prisma/
 
