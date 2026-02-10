@@ -1,66 +1,55 @@
-## Foundry
+# @xnad/contracts
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Solidity smart contracts for vault-based automated trading on Monad, built with Foundry.
 
-Foundry consists of:
+## Contracts
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+### VaultFactory
 
-## Documentation
+Factory contract that creates one `UserVault` per user address.
 
-https://book.getfoundry.sh/
+- Creates vaults via `createVault()` or `createVaultFor(address)`
+- Tracks all vaults in a registry
+- Configurable default agent address
+- Emits `VaultCreated` events for indexing
+
+### UserVault
+
+Personal vault where users deposit MON and an authorized agent trades on their behalf.
+
+- **Deposit** - Users send MON to the vault
+- **Trade** - Agent calls `executeTrade()` to buy/sell on nad.fun bonding curves
+- **Strategy** - Three types: Conservative (0), Balanced (1), Aggressive (2)
+- **Pause** - Owner can pause/unpause trading
+- **Withdraw** - Owner can withdraw funds at any time
+
+All actions emit events: `Deposited`, `Withdrawn`, `TradeExecuted`, `StrategyUpdated`, `Paused`, `AgentUpdated`
+
+## Deployment
+
+Deployed on Monad Testnet (Chain ID: 10143):
+- **VaultFactory**: `0x164B4eF50c0C8C75Dc6F571e62731C4Fa0C6283A`
 
 ## Usage
 
-### Build
+```bash
+# Build contracts
+forge build
 
-```shell
-$ forge build
+# Run tests
+forge test
+
+# Gas report
+forge test --gas-report
+
+# Deploy to local
+forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast
+
+# Deploy to Monad testnet
+forge script script/Deploy.s.sol --rpc-url $RPC_URL --broadcast --verify
 ```
 
-### Test
+## Dependencies
 
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+- Solidity ^0.8.20
+- [Foundry](https://book.getfoundry.sh/) (forge, cast, anvil)

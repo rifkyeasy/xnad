@@ -1,34 +1,104 @@
-# Agent Cartel
+# XNAD
 
-> "Alone we pump, together we graduate"
+> Social AI Trading Agent for nad.fun on Monad
 
-A coordinated network of AI agents that form alliances to dominate nad.fun token launches on the Monad blockchain.
+An AI-powered trading system that monitors social signals from X/Twitter, analyzes them with GPT-4.1, and autonomously executes trades on [nad.fun](https://nad.fun) bonding curves via smart contract vaults.
 
 Built for the [Moltiverse Hackathon](https://moltiverse.dev/) (Feb 2-18, 2026).
 
-## Overview
+## How It Works
 
-Agent Cartel demonstrates what happens when AI agents coordinate at scale:
-- Combined shilling power on Moltbook
-- Shared communities of buyers
-- Coordinated buy pressure
-- Faster graduation = more profit for all
+1. **Monitor** - Agent watches curated X/Twitter accounts for trading signals
+2. **Analyze** - GPT-4.1 extracts token addresses, confidence scores, and risk levels from tweets
+3. **Execute** - High-confidence signals trigger autonomous trades on nad.fun bonding curves
+4. **Track** - On-chain vault events are indexed in real-time and displayed on the web dashboard
+
+## Architecture
+
+```
+X/Twitter ──> Agent (AI Analysis) ──> Smart Contract Vaults ──> nad.fun
+                                            │
+                                       Ponder Indexer
+                                            │
+                              Backend API ──> Web Dashboard
+```
 
 ## Project Structure
 
 ```
-agent-cartel/
+xnad/
 ├── apps/
-│   ├── boss/                # Lead agent (coordination, treasury)
-│   └── member/              # Member agent template
+│   ├── agent/          # AI trading agent (tweet monitoring + execution)
+│   ├── backend/        # REST API (Hono + Prisma + PostgreSQL)
+│   ├── contracts/      # Solidity vaults (Foundry)
+│   ├── indexer/        # Blockchain event indexer (Ponder)
+│   └── web/            # Dashboard frontend (Next.js 15)
+│
 ├── packages/
-│   ├── blockchain/          # Monad & nad.fun integration
-│   ├── config/              # Shared configuration
-│   ├── shared/              # Types & utilities
-│   └── social/              # Moltbook integration
-├── turbo.json               # Turborepo config
-└── pnpm-workspace.yaml      # Workspace config
+│   ├── blockchain/     # Monad & nad.fun SDK integration
+│   ├── config/         # Environment, constants, ABIs
+│   ├── shared/         # Types & utilities
+│   └── social/         # Moltbook integration
+│
+├── turbo.json
+└── pnpm-workspace.yaml
 ```
+
+## Apps
+
+### Agent (`apps/agent`)
+
+Standalone Node.js process that runs continuously:
+
+- Watches 7 configured X accounts for signal keywords (launch, buy, bullish, moon, gem, etc.)
+- Filters and analyzes tweets using OpenAI GPT-4.1-mini
+- Extracts token addresses, buy/sell signals, confidence scores (0-1), and risk levels
+- Executes trades on nad.fun when confidence exceeds 70%
+- Tracks processed tweets to avoid duplicates
+- Supports dry-run mode for testing
+
+### Backend (`apps/backend`)
+
+REST API built with Hono:
+
+- User profile management (wallets, strategies, automation settings)
+- Trade history and position tracking
+- Token info and price quotes from nad.fun
+- Wallet balance queries
+- Proxy to Ponder indexer for vault data
+- Prisma ORM with PostgreSQL (NeonDB)
+
+### Contracts (`apps/contracts`)
+
+Solidity smart contracts deployed on Monad Testnet:
+
+- **VaultFactory** - Creates per-user vaults, manages registry
+- **UserVault** - Holds user MON, agent executes trades on their behalf
+  - Three strategies: Conservative, Balanced, Aggressive
+  - Pause/unpause trading, withdraw funds
+  - All actions emit events for indexing
+
+Deployed at: `0x164B4eF50c0C8C75Dc6F571e62731C4Fa0F6283A`
+
+### Indexer (`apps/indexer`)
+
+Ponder-based blockchain event indexer:
+
+- Tracks VaultCreated, Deposited, Withdrawn, TradeExecuted, StrategyUpdated events
+- Maintains vault state (balance, trade count, strategy)
+- Multiple RPC fallback endpoints for reliability
+- Serves data via REST API
+
+### Web (`apps/web`)
+
+Next.js 15 dashboard:
+
+- **Dashboard** - Vault balance, positions, P&L, strategy overview
+- **Agent Setup** - Create vault, configure AI agent, select strategy
+- **Trade** - Manual buy/sell interface with token search and quotes
+- **Positions** - Current holdings and trade history
+
+Wallet connection via Wagmi, styled with HeroUI + TailwindCSS.
 
 ## Quick Start
 
@@ -36,116 +106,75 @@ agent-cartel/
 
 - Node.js 20+
 - pnpm 9+
+- PostgreSQL (or NeonDB)
 
 ### Installation
 
 ```bash
-# Install dependencies
 pnpm install
-
-# Copy environment file
 cp .env.example .env
-
 # Edit .env with your credentials
 ```
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `PRIVATE_KEY` | Yes | Wallet private key for trading |
+| `OPENAI_API_KEY` | Yes | OpenAI API key for tweet analysis |
+| `X_RAPIDAPI_API_KEY` | Yes | RapidAPI key for Twitter API |
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `RPC_URL` | No | Monad RPC (default: testnet) |
+| `NADFUN_API_KEY` | No | nad.fun API key (higher rate limits) |
+| `MOLTBOOK_API_KEY` | No | Moltbook API key |
+| `DRY_RUN` | No | Simulate trades without executing (default: false) |
+| `PORT` | No | Backend port (default: 3001) |
 
 ### Development
 
 ```bash
-# Run all packages in dev mode
+# Run all apps
 pnpm dev
 
-# Run just the boss agent
-pnpm dev:boss
-
-# Run a member agent
-pnpm dev:member
+# Run individual apps
+pnpm dev:web        # Web dashboard
+pnpm dev:backend    # Backend API
+pnpm dev:agent      # Trading agent
 ```
 
 ### Build
 
 ```bash
-# Build all packages
 pnpm build
-
-# Type check
 pnpm typecheck
-
-# Lint
 pnpm lint
 ```
 
-## Configuration
+### Database
 
-### Required Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `PRIVATE_KEY` | Wallet private key (64 chars, no 0x) |
-| `MOLTBOOK_API_KEY` | Moltbook API key for social features |
-
-### Optional Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MONAD_RPC_URL` | testnet | Monad RPC endpoint |
-| `ENABLE_TRADING` | false | Enable real trades |
-| `DRY_RUN` | true | Simulate without executing |
-
-## Architecture
-
-### Boss Agent
-
-The leader of Agent Cartel:
-- Coordinates member agents
-- Manages launch proposals and voting
-- Executes coordinated buy/sell waves
-- Distributes profits to members
-- Posts cartel updates on Moltbook
-
-### Member Agents
-
-Cartel members with unique personalities:
-- Receive instructions from Boss
-- Execute shill posts
-- Participate in coordinated buys
-- Vote on proposals
-
-### Personalities
-
-| Type | Style | Risk Tolerance |
-|------|-------|----------------|
-| AGGRESSIVE | Bold, urgent | High |
-| CONSERVATIVE | Analytical | Low |
-| BALANCED | Mixed | Medium |
-| MEME_LORD | Humorous | Medium-High |
-| WHALE_HUNTER | Exclusive | High |
-
-## Token: $CARTEL
-
-### Membership Tiers
-
-| Tier | Stake | Benefits |
-|------|-------|----------|
-| Associate | 1K | Participate in pumps |
-| Soldier | 10K | Early buy signals |
-| Capo | 50K | Can propose launches |
-| Boss | 100K | Governance + profit share |
+```bash
+pnpm db:push        # Sync Prisma schema to DB
+pnpm db:migrate     # Run migrations
+pnpm db:studio      # Open Prisma Studio
+```
 
 ## Tech Stack
 
-- **Runtime**: Node.js / TypeScript
-- **Blockchain**: Monad (viem)
-- **Social**: Moltbook API
-- **Monorepo**: Turborepo + pnpm
-- **Token Platform**: nad.fun
+| Layer | Technology |
+|-------|-----------|
+| AI | OpenAI GPT-4.1-mini |
+| Blockchain | Monad Testnet, Viem, nad.fun SDK |
+| Contracts | Solidity 0.8.20, Foundry |
+| Backend | Hono, Prisma, PostgreSQL |
+| Indexer | Ponder 0.16.3 |
+| Frontend | Next.js 15, React, HeroUI, Wagmi, TailwindCSS |
+| Monorepo | Turborepo, pnpm |
 
 ## Resources
 
 - [Moltiverse Hackathon](https://moltiverse.dev/)
 - [Monad Docs](https://docs.monad.xyz/)
-- [Nad.fun Docs](https://nad-fun.gitbook.io/nad.fun)
-- [Moltbook](https://moltbook.com)
+- [nad.fun Docs](https://nad-fun.gitbook.io/nad.fun)
 
 ## License
 

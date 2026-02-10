@@ -1,53 +1,34 @@
-# Next.js & HeroUI Template
+# @xnad/web
 
-This is a template for creating applications using Next.js 14 (app directory) and HeroUI (v2).
+Dashboard frontend for xnad, built with Next.js 15 and HeroUI.
 
-[Try it on CodeSandbox](https://githubbox.com/heroui-inc/heroui/next-app-template)
+## Pages
 
-## Technologies Used
+- **Dashboard** (`/`) - Vault balance, positions, P&L, strategy overview, agent status
+- **Agent Setup** (`/agent`) - Create vault, configure AI agent, select strategy
+- **Trade** (`/trade`) - Manual buy/sell interface with token search and quotes
+- **Positions** (`/trade/positions`) - Current holdings and trade history
 
-- [Next.js 14](https://nextjs.org/docs/getting-started)
-- [HeroUI v2](https://heroui.com/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Tailwind Variants](https://tailwind-variants.org)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Framer Motion](https://www.framer.com/motion/)
-- [next-themes](https://github.com/pacocoursey/next-themes)
+## Tech
 
-## How to Use
+- [Next.js 15](https://nextjs.org) with Turbopack
+- [HeroUI](https://heroui.com) component library
+- [Wagmi](https://wagmi.sh) for wallet connection
+- [Zustand](https://zustand.docs.pmnd.rs) for state management
+- [TailwindCSS](https://tailwindcss.com) for styling
+- [React Query](https://tanstack.com/query) for data fetching
 
-### Use the template with create-next-app
-
-To create a new project based on this template using `create-next-app`, run the following command:
-
-```bash
-npx create-next-app -e https://github.com/heroui-inc/next-app-template
-```
-
-### Install dependencies
-
-You can use one of them `npm`, `yarn`, `pnpm`, `bun`, Example using `npm`:
+## Scripts
 
 ```bash
-npm install
+pnpm dev      # Run dev server with Turbopack
+pnpm build    # Production build
+pnpm start    # Start production server
+pnpm lint     # Lint and auto-fix
 ```
 
-### Run the development server
+## Environment Variables
 
-```bash
-npm run dev
-```
-
-### Setup pnpm (optional)
-
-If you are using `pnpm`, you need to add the following code to your `.npmrc` file:
-
-```bash
-public-hoist-pattern[]=*@heroui/*
-```
-
-After modifying the `.npmrc` file, you need to run `pnpm install` again to ensure that the dependencies are installed correctly.
-
-## License
-
-Licensed under the [MIT license](https://github.com/heroui-inc/next-app-template/blob/main/LICENSE).
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NEXT_PUBLIC_BACKEND_URL` | No | Backend API URL (default: http://localhost:3001) |
