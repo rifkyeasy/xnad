@@ -2,6 +2,8 @@
 
 Real-time blockchain event indexer for xnad vault activities on Monad, built with Ponder.
 
+**Live**: https://indexer.xnad.fun
+
 ## What It Indexes
 
 | Event | Source | Description |

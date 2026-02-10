@@ -2,6 +2,8 @@
 
 Dashboard frontend for xnad, built with Next.js 15 and HeroUI.
 
+**Live**: https://xnad.fun
+
 ## Pages
 
 - **Dashboard** (`/`) - Vault balance, positions, P&L, strategy overview, agent status
@@ -31,4 +33,4 @@ pnpm lint     # Lint and auto-fix
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `NEXT_PUBLIC_BACKEND_URL` | No | Backend API URL (default: http://localhost:3001) |
+| `NEXT_PUBLIC_BACKEND_URL` | No | Backend API URL (default: http://localhost:3001, prod: https://api.xnad.fun) |

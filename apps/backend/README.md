@@ -2,6 +2,8 @@
 
 REST API server for xnad, providing user management, trade tracking, and integration between the web frontend, agent, and blockchain.
 
+**Live**: https://api.xnad.fun
+
 ## Tech
 
 - [Hono](https://hono.dev) - HTTP framework
@@ -50,4 +52,4 @@ Strategies: `CONSERVATIVE`, `BALANCED`, `AGGRESSIVE`
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `PORT` | No | Server port (default: 3001) |
-| `INDEXER_URL` | No | Ponder indexer URL |
+| `INDEXER_URL` | No | Ponder indexer URL (default: http://localhost:42069, prod: https://indexer.xnad.fun) |

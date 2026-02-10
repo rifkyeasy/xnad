@@ -170,6 +170,14 @@ pnpm db:studio      # Open Prisma Studio
 | Frontend | Next.js 15, React, HeroUI, Wagmi, TailwindCSS |
 | Monorepo | Turborepo, pnpm |
 
+## Live URLs
+
+| Service | URL |
+|---------|-----|
+| Web App | https://xnad.fun |
+| API | https://api.xnad.fun |
+| Indexer | https://indexer.xnad.fun |
+
 ## Resources
 
 - [Moltiverse Hackathon](https://moltiverse.dev/)

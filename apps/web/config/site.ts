@@ -3,6 +3,7 @@ export type SiteConfig = typeof siteConfig;
 export const siteConfig = {
   name: "xnad",
   description: "Social AI Trading Agent for nad.fun on Monad",
+  url: "https://xnad.fun",
   navItems: [
     {
       label: "Dashboard",
