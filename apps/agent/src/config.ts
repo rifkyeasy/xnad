@@ -46,38 +46,39 @@ export const VAULT_CONTRACTS = {
   vaultFactory: process.env.VAULT_FACTORY_ADDRESS || '0x164B4eF50c0C8C75Dc6F571e62731C4Fa0C6283A',
 };
 
-// Testnet tokens (mirrored from mainnet)
-export const TESTNET_TOKENS = {
-  chog: '0x6946EE2E38e871B6cE0a70908F806036e9387777', // Chog - mirrored from mainnet
-  tagt: '0xfDB4DC8BFd39515762Dca9C671701E68F5297777', // Test Agent Token - original test token
+// Tradeable tokens on nad.fun testnet
+export const TOKENS = {
+  SHRAMP: '0x2F0292D4b34601D97ee7E52b2058f11928B87777',
+  DRA: '0xFBD84ab1526BfbA7533b1EC2842894eE92777777',
+  CHOG: '0x6946EE2E38e871B6cE0a70908F806036e9387777',
 };
 
-// Real tokens from nad.fun mainnet categorized by market cap (for reference)
-export const MARKET_TOKENS = {
-  // High cap (>=$100K) - Conservative strategy targets
-  high: [
-    '0x350035555E10d9AfAF1566AaebfCeD5BA6C27777', // CHOG - $746K
-    '0x91ce820dD39A2B5639251E8c7837998530Fe7777', // Motion - $340K
-    '0x81A224F8A62f52BdE942dBF23A56df77A10b7777', // emo - $160K
-    '0x405b6330e213DED490240CbcDD64790806827777', // moncock - $149K
-  ],
-  // Medium cap ($10K-$100K) - Balanced strategy targets
-  medium: [
-    '0xB1C0d1a1CC0199D78649EFc40FDe85A080Cd7777', // sbgood - $62K
-    '0x42a4aA89864A794dE135B23C6a8D2E05513d7777', // shramp - $58K
-    '0xB744F5CDb792d8187640214C4A1c9aCE29af7777', // MONSHI - $29K
-    '0x29E8a68e6F5275c36767ae531B9f6b5953Ba7777', // GROOL - $22K
-    '0x39B9E06f226FF6D7500c870B82333AACbD2F7777', // NADS - $19K
-  ],
-  // Low cap (<$10K) - Aggressive strategy targets
-  low: [
-    '0x8361a59d340466211ad4aB41C09a32e4530a7777', // MonWolf - $8.2K
-    '0x5dF178C7E58046BC9074782fef0009C6Be167777', // Anago - $7.6K
-    '0x148a3a811979e5BF8366FC279B2d67742Fe17777', // PHUCKMC - $7.5K
-    '0x93A7006bD345a7dFfF35910Da2DB97bA4Cb67777', // TABBY - $7.1K
-    '0x48223050FE5d96E55e56283de15504490d557777', // Mongo - $6.7K
-  ],
-};
+// Default token when no specific token is identified
+export const DEFAULT_TOKEN = TOKENS.CHOG;
+
+/**
+ * Resolve a token symbol or address to a known token address.
+ * Falls back to CHOG if unknown.
+ */
+export function resolveTokenAddress(symbolOrAddress?: string): string {
+  if (!symbolOrAddress) return DEFAULT_TOKEN;
+
+  const upper = symbolOrAddress.toUpperCase().replace('$', '');
+
+  // Match by symbol
+  if (upper.includes('SHRAMP') || upper.includes('SHRIMP')) return TOKENS.SHRAMP;
+  if (upper.includes('DRA') || upper.includes('DRALIEN')) return TOKENS.DRA;
+  if (upper.includes('CHOG')) return TOKENS.CHOG;
+
+  // Match by address
+  const addr = symbolOrAddress.toLowerCase();
+  if (addr === TOKENS.SHRAMP.toLowerCase()) return TOKENS.SHRAMP;
+  if (addr === TOKENS.DRA.toLowerCase()) return TOKENS.DRA;
+  if (addr === TOKENS.CHOG.toLowerCase()) return TOKENS.CHOG;
+
+  // Unknown token → default to CHOG
+  return DEFAULT_TOKEN;
+}
 
 // Trading config
 export const TRADING_CONFIG = {

@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { ENV } from './config.js';
+import { ENV, TOKENS, resolveTokenAddress } from './config.js';
 import type { Tweet } from './x-service.js';
 import { log } from './logger.js';
 
@@ -25,10 +25,15 @@ export interface TweetAnalysis {
 
 const SYSTEM_PROMPT = `You are a crypto trading AI agent that analyzes tweets to find trading opportunities on nad.fun (a token launchpad on Monad blockchain).
 
+Available tokens to trade:
+- SHRAMP (address: ${TOKENS.SHRAMP})
+- DRA (address: ${TOKENS.DRA})
+- CHOG (address: ${TOKENS.CHOG}) — default token
+
 Your job is to:
 1. Analyze the tweet content and author credibility
 2. Determine if this is a trading signal (buy/sell/hold)
-3. Extract any token addresses or symbols mentioned
+3. Map mentioned tokens to the available tokens above. If the tweet mentions a token not in the list, use CHOG as default.
 4. Assess the risk level and confidence
 
 Consider these factors:
@@ -37,7 +42,6 @@ Consider these factors:
 - Sentiment and tone of the tweet
 - Whether it mentions specific tokens or addresses
 - If it's an announcement vs opinion vs shill
-- Red flags like "not financial advice" disclaimers or too-good-to-be-true claims
 
 Respond in JSON format only.`;
 
@@ -93,6 +97,11 @@ Respond with JSON:
 
     const signal = JSON.parse(jsonMatch[0]) as TradeSignal;
 
+    // Always resolve to a known token address
+    if (signal.action !== 'hold') {
+      signal.tokenAddress = resolveTokenAddress(signal.tokenAddress || signal.tokenSymbol);
+    }
+
     return {
       tweet,
       signal: signal.action !== 'hold' ? signal : null,
@@ -132,7 +141,7 @@ export function getActionableSignals(
       a.signal &&
       a.signal.action !== 'hold' &&
       a.signal.confidence >= minConfidence &&
-      (a.signal.tokenAddress || a.signal.tokenSymbol)
+      a.signal.tokenAddress
   );
 }
 
