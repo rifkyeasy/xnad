@@ -115,8 +115,31 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
   const totalValue = parseFloat(balance) + totalPositionValue;
   const totalPnl = positions.reduce((sum, p) => sum + parseFloat(p.unrealizedPnl), 0);
 
+  const isEmpty = parseFloat(balance) === 0 && positions.length === 0;
+
   return (
     <div className="flex flex-col gap-4">
+      {/* Empty vault CTA */}
+      {isEmpty && (
+        <Card className="border border-success/40 shadow-none bg-transparent">
+          <CardBody className="p-6 text-center">
+            <p className="text-3xl mb-3">&#x1F4B0;</p>
+            <h3 className="text-lg font-bold mb-1">Fund Your Vault</h3>
+            <p className="text-default-500 text-sm mb-5 max-w-sm mx-auto">
+              Deposit MON to let the AI agent start trading on nad.fun for you.
+            </p>
+            <Button
+              className="mx-auto"
+              color="success"
+              size="lg"
+              onPress={depositModal.onOpen}
+            >
+              Deposit MON
+            </Button>
+          </CardBody>
+        </Card>
+      )}
+
       {/* Stats + Actions */}
       <Card className="border border-success/40 shadow-none bg-transparent">
         <CardBody className="p-4">
@@ -146,16 +169,15 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="flat" onPress={depositModal.onOpen}>
+            <Button color="success" variant="flat" onPress={depositModal.onOpen}>
               Deposit
             </Button>
-            <Button size="sm" variant="flat" onPress={withdrawModal.onOpen}>
+            <Button variant="bordered" onPress={withdrawModal.onOpen}>
               Withdraw
             </Button>
             <Button
               color={paused ? 'success' : 'danger'}
               isLoading={isConfirming}
-              size="sm"
               variant="flat"
               onPress={() => setPaused(!paused)}
             >
