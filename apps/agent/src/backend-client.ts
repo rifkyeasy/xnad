@@ -2,7 +2,7 @@ import type { StrategyConfig } from './strategy-classifier.js';
 import type { Position } from './sell-manager.js';
 import type { TargetAllocation } from './rebalancer.js';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://api.xnad.fun';
+const BACKEND_URL = 'https://api.xnad.fun';
 
 export interface User {
   id: string;

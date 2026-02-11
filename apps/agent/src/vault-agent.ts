@@ -11,7 +11,7 @@ import { getPositionManager, type VaultWithPositions } from './position-manager.
 import { getStrategyConfig, type StrategyConfig, type StrategyType } from './strategy-classifier.js';
 
 // Backend API URL
-const BACKEND_URL = process.env.BACKEND_URL || 'https://api.xnad.fun';
+const BACKEND_URL = 'https://api.xnad.fun';
 
 // Vault check interval (30 seconds)
 const VAULT_CHECK_INTERVAL = 30000;
@@ -128,8 +128,8 @@ async function processVault(
     const pnlPct = sellManager.calculatePnlPercent(pos);
     console.log(
       `    ${pos.tokenSymbol}: ${pos.balance} tokens, ` +
-        `value: ${parseFloat(pos.currentValue).toFixed(4)} MON, ` +
-        `P&L: ${pnlPct.toFixed(2)}%`
+      `value: ${parseFloat(pos.currentValue).toFixed(4)} MON, ` +
+      `P&L: ${pnlPct.toFixed(2)}%`
     );
   }
 

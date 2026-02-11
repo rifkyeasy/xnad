@@ -8,7 +8,7 @@ import positions from './routes/positions.js';
 const app = new Hono();
 
 // Indexer URL
-const INDEXER_URL = process.env.INDEXER_URL || 'https://indexer.xnad.fun';
+const INDEXER_URL = 'https://indexer.xnad.fun';
 
 // Middleware
 app.use('*', logger());
