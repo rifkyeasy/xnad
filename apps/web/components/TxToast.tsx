@@ -98,7 +98,15 @@ export function TxToastContainer() {
   const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
     const id = String(++idRef.current);
 
-    setToasts((prev) => [...prev.slice(-4), { ...toast, id }]);
+    setToasts((prev) => {
+      // When success or error arrives, remove all pending toasts
+      const filtered =
+        toast.status === 'success' || toast.status === 'error'
+          ? prev.filter((t) => t.status !== 'pending')
+          : prev;
+
+      return [...filtered.slice(-4), { ...toast, id }];
+    });
   }, []);
 
   const removeToast = useCallback((id: string) => {

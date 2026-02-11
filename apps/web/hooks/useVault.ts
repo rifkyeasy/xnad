@@ -6,6 +6,7 @@ import { useState } from 'react';
 
 import { VAULT_CONTRACTS } from '@/config/contracts';
 import { txToast } from '@/components/TxToast';
+import { useChainCheck } from '@/hooks/useChainCheck';
 
 const USER_VAULT_ABI = [
   {
@@ -135,18 +136,31 @@ export function useVaultFactory(userAddress?: string) {
   });
 
   const { writeContractAsync } = useWriteContract();
+  const { ensureCorrectChain } = useChainCheck();
 
   const createVault = async () => {
+    const ok = await ensureCorrectChain();
+
+    if (!ok) {
+      txToast('error', 'Please switch to Monad Testnet');
+      throw new Error('Wrong network');
+    }
+
     txToast('pending', 'Creating vault...');
-    const hash = await writeContractAsync({
-      address: VAULT_FACTORY_ADDRESS,
-      abi: VAULT_FACTORY_ABI,
-      functionName: 'createVault',
-    });
+    try {
+      const hash = await writeContractAsync({
+        address: VAULT_FACTORY_ADDRESS,
+        abi: VAULT_FACTORY_ABI,
+        functionName: 'createVault',
+      });
 
-    txToast('success', 'Vault created!', hash);
+      txToast('success', 'Vault created!', hash);
 
-    return hash;
+      return hash;
+    } catch (error) {
+      txToast('error', error instanceof Error ? error.message : 'Vault creation failed');
+      throw error;
+    }
   };
 
   return {
@@ -196,83 +210,123 @@ export function useVault(vaultAddress?: string | null) {
   });
 
   const { writeContractAsync } = useWriteContract();
+  const { ensureCorrectChain } = useChainCheck();
 
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({
     hash: pendingTx as `0x${string}`,
   });
 
+  const guardChain = async () => {
+    const ok = await ensureCorrectChain();
+
+    if (!ok) {
+      txToast('error', 'Please switch to Monad Testnet');
+      throw new Error('Wrong network');
+    }
+  };
+
   const deposit = async (amount: string) => {
+    await guardChain();
     txToast('pending', `Depositing ${amount} MON...`);
-    const hash = await writeContractAsync({
-      address: vaultAddress as `0x${string}`,
-      abi: USER_VAULT_ABI,
-      functionName: 'deposit',
-      value: parseEther(amount),
-    });
+    try {
+      const hash = await writeContractAsync({
+        address: vaultAddress as `0x${string}`,
+        abi: USER_VAULT_ABI,
+        functionName: 'deposit',
+        value: parseEther(amount),
+      });
 
-    setPendingTx(hash);
-    txToast('success', `Deposited ${amount} MON`, hash);
+      setPendingTx(hash);
+      txToast('success', `Deposited ${amount} MON`, hash);
 
-    return hash;
+      return hash;
+    } catch (error) {
+      txToast('error', error instanceof Error ? error.message : 'Deposit failed');
+      throw error;
+    }
   };
 
   const withdraw = async (amount: string) => {
+    await guardChain();
     txToast('pending', `Withdrawing ${amount} MON...`);
-    const hash = await writeContractAsync({
-      address: vaultAddress as `0x${string}`,
-      abi: USER_VAULT_ABI,
-      functionName: 'withdraw',
-      args: [parseEther(amount)],
-    });
+    try {
+      const hash = await writeContractAsync({
+        address: vaultAddress as `0x${string}`,
+        abi: USER_VAULT_ABI,
+        functionName: 'withdraw',
+        args: [parseEther(amount)],
+      });
 
-    setPendingTx(hash);
-    txToast('success', `Withdrew ${amount} MON`, hash);
+      setPendingTx(hash);
+      txToast('success', `Withdrew ${amount} MON`, hash);
 
-    return hash;
+      return hash;
+    } catch (error) {
+      txToast('error', error instanceof Error ? error.message : 'Withdraw failed');
+      throw error;
+    }
   };
 
   const withdrawAll = async () => {
+    await guardChain();
     txToast('pending', 'Withdrawing all MON...');
-    const hash = await writeContractAsync({
-      address: vaultAddress as `0x${string}`,
-      abi: USER_VAULT_ABI,
-      functionName: 'withdrawAll',
-    });
+    try {
+      const hash = await writeContractAsync({
+        address: vaultAddress as `0x${string}`,
+        abi: USER_VAULT_ABI,
+        functionName: 'withdrawAll',
+      });
 
-    setPendingTx(hash);
-    txToast('success', 'Withdrew all MON', hash);
+      setPendingTx(hash);
+      txToast('success', 'Withdrew all MON', hash);
 
-    return hash;
+      return hash;
+    } catch (error) {
+      txToast('error', error instanceof Error ? error.message : 'Withdraw failed');
+      throw error;
+    }
   };
 
   const setStrategy = async (type: number, maxAmount: string) => {
+    await guardChain();
     txToast('pending', 'Setting strategy...');
-    const hash = await writeContractAsync({
-      address: vaultAddress as `0x${string}`,
-      abi: USER_VAULT_ABI,
-      functionName: 'setStrategy',
-      args: [type, parseEther(maxAmount)],
-    });
+    try {
+      const hash = await writeContractAsync({
+        address: vaultAddress as `0x${string}`,
+        abi: USER_VAULT_ABI,
+        functionName: 'setStrategy',
+        args: [type, parseEther(maxAmount)],
+      });
 
-    setPendingTx(hash);
-    txToast('success', 'Strategy updated!', hash);
+      setPendingTx(hash);
+      txToast('success', 'Strategy updated!', hash);
 
-    return hash;
+      return hash;
+    } catch (error) {
+      txToast('error', error instanceof Error ? error.message : 'Strategy update failed');
+      throw error;
+    }
   };
 
   const setPaused = async (isPaused: boolean) => {
+    await guardChain();
     txToast('pending', isPaused ? 'Pausing vault...' : 'Resuming vault...');
-    const hash = await writeContractAsync({
-      address: vaultAddress as `0x${string}`,
-      abi: USER_VAULT_ABI,
-      functionName: 'setPaused',
-      args: [isPaused],
-    });
+    try {
+      const hash = await writeContractAsync({
+        address: vaultAddress as `0x${string}`,
+        abi: USER_VAULT_ABI,
+        functionName: 'setPaused',
+        args: [isPaused],
+      });
 
-    setPendingTx(hash);
-    txToast('success', isPaused ? 'Vault paused' : 'Vault resumed', hash);
+      setPendingTx(hash);
+      txToast('success', isPaused ? 'Vault paused' : 'Vault resumed', hash);
 
-    return hash;
+      return hash;
+    } catch (error) {
+      txToast('error', error instanceof Error ? error.message : 'Failed');
+      throw error;
+    }
   };
 
   return {
