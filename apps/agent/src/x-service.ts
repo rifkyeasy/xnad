@@ -19,33 +19,35 @@ interface ProfileResponse {
   username: string;
 }
 
-// Get X user profile (username -> userId)
+// Get X user profile (username -> userId) via RapidAPI
 async function getProfile(username: string): Promise<ProfileResponse> {
-  const res = await fetch(`https://tweethunter.io/api/convert2?inputString=${username}`, {
-    method: 'GET',
-    headers: {
-      accept: '*/*',
-      'accept-language': 'en-US,en;q=0.9',
-      'sec-fetch-dest': 'empty',
-      'sec-fetch-mode': 'cors',
-      'sec-fetch-site': 'same-origin',
-      Referer: 'https://tweethunter.io/twitter-id-converter',
-    },
-  });
+  const res = await fetch(
+    `https://twitter241.p.rapidapi.com/user?username=${username}`,
+    {
+      method: 'GET',
+      headers: {
+        'x-rapidapi-key': ENV.X_RAPIDAPI_KEY,
+        'x-rapidapi-host': 'twitter241.p.rapidapi.com',
+      },
+    }
+  );
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     throw new Error(`Profile lookup failed for @${username} (${res.status}): ${body}`);
   }
 
-  const data = (await res.json()) as { userId: string; username: string };
-  if (!data.userId) {
+  const data = (await res.json()) as {
+    result?: { data?: { user?: { result?: { rest_id?: string; legacy?: { screen_name?: string } } } } };
+  };
+  const userId = data?.result?.data?.user?.result?.rest_id;
+  if (!userId) {
     throw new Error(`No userId returned for @${username}`);
   }
 
   return {
-    userId: data.userId,
-    username: data.username,
+    userId,
+    username: data?.result?.data?.user?.result?.legacy?.screen_name || username,
   };
 }
 
