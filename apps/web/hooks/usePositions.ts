@@ -339,52 +339,38 @@ export function usePortfolioChart(vaultAddress?: string) {
       .filter((t) => t.status === 'COMPLETED' || t.status === 'SUCCESS')
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-    // No trades — flat line at current value
-    if (sorted.length === 0) {
-      return [
-        { date: formatChartDate(new Date(now - 7 * 86400000)), value: currentValue },
-        { date: formatChartDate(new Date(now)), value: currentValue },
-      ];
-    }
-
-    const startTime = new Date(sorted[0].createdAt).getTime() - 86400000;
-    const endTime = now;
-    const startValue = totalDeposited;
-
     const points: ChartPoint[] = [];
 
-    // Starting point: deposit (day before first trade)
-    points.push({ date: formatChartDate(new Date(startTime)), value: startValue });
+    // Always start from 0
+    const depositTime = sorted.length > 0
+      ? new Date(sorted[0].createdAt).getTime() - 86400000
+      : now - 7 * 86400000;
+    points.push({ date: formatChartDate(new Date(depositTime)), value: 0 });
 
-    // Each trade creates a data point at its real timestamp.
-    // Value is interpolated from deposit→current, adjusted by trade cash flow.
-    let cumBuyCost = 0;
-    let cumSellProceeds = 0;
+    // Deposit point
+    const afterDepositTime = sorted.length > 0
+      ? new Date(sorted[0].createdAt).getTime() - 3600000
+      : now - 6 * 86400000;
+    points.push({ date: formatChartDate(new Date(afterDepositTime)), value: totalDeposited });
 
-    for (const trade of sorted) {
-      const tradeTime = new Date(trade.createdAt).getTime();
-      const progress = Math.min(1, (tradeTime - startTime) / (endTime - startTime));
+    // Each trade: time-proportional interpolation between deposit and current value
+    if (sorted.length > 0) {
+      const startTime = new Date(sorted[0].createdAt).getTime() - 86400000;
+      const endTime = now;
 
-      if (trade.action === 'BUY') {
-        cumBuyCost += parseFloat(trade.amountIn);
-      } else {
-        cumSellProceeds += parseFloat(trade.amountOut);
+      for (const trade of sorted) {
+        const tradeTime = new Date(trade.createdAt).getTime();
+        const progress = Math.min(1, (tradeTime - startTime) / (endTime - startTime));
+        const value = totalDeposited + progress * (currentValue - totalDeposited);
+
+        points.push({
+          date: formatChartDate(new Date(trade.createdAt)),
+          value: Math.max(0, parseFloat(value.toFixed(4))),
+        });
       }
-
-      // Net cash flow from trading (positive means profitable sells)
-      const tradingPnl = cumSellProceeds - cumBuyCost;
-
-      // Blend: time-based interpolation + trading cash flow signal
-      const interpolated = startValue + progress * (currentValue - startValue);
-      const value = interpolated + tradingPnl * 0.3;
-
-      points.push({
-        date: formatChartDate(new Date(trade.createdAt)),
-        value: Math.max(0, parseFloat(value.toFixed(2))),
-      });
     }
 
-    // Current point: real value
+    // Final point: real current value
     points.push({ date: formatChartDate(new Date(now)), value: currentValue });
 
     // Deduplicate same-date entries (keep last)

@@ -59,9 +59,9 @@ export default function Portfolio() {
       </div>
 
       {/* Main: Chart (left) + Details (right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-stretch">
         {/* Chart */}
-        <div className="lg:col-span-3 rounded-xl border border-success/30 p-4">
+        <div className="lg:col-span-3 rounded-xl border border-success/30 p-4 flex flex-col">
           <div className="flex items-baseline justify-between mb-3">
             <p className="text-xs text-default-500 uppercase tracking-wider">Portfolio Value</p>
             <div className="flex items-baseline gap-2">
@@ -76,7 +76,7 @@ export default function Portfolio() {
               )}
             </div>
           </div>
-          <div className="h-56">
+          <div className="flex-1 min-h-[14rem]">
             {chartData.length > 0 ? (
               <ResponsiveContainer height="100%" width="100%">
                 <AreaChart data={chartData}>
@@ -95,7 +95,7 @@ export default function Portfolio() {
                   />
                   <YAxis
                     axisLine={false}
-                    domain={['dataMin', 'dataMax']}
+                    domain={[0, 'auto']}
                     stroke="#71717a"
                     tick={{ fontSize: 11 }}
                     tickLine={false}
