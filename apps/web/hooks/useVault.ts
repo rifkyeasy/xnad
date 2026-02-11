@@ -196,7 +196,7 @@ export function useVaultFactory(userAddress?: string) {
         address: VAULT_FACTORY_ADDRESS,
         abi: VAULT_FACTORY_ABI,
         functionName: 'createVault',
-        gas: 500_000n,
+        gas: 3_000_000n,
       });
 
       txToast('success', 'Vault created!', hash);
@@ -280,7 +280,7 @@ export function useVault(vaultAddress?: string | null) {
         abi: USER_VAULT_ABI,
         functionName: 'deposit',
         value: parseEther(amount),
-        gas: 200_000n,
+        gas: 500_000n,
       });
 
       setPendingTx(hash);
@@ -303,7 +303,7 @@ export function useVault(vaultAddress?: string | null) {
         abi: USER_VAULT_ABI,
         functionName: 'withdraw',
         args: [parseEther(amount)],
-        gas: 200_000n,
+        gas: 500_000n,
       });
 
       setPendingTx(hash);
@@ -325,7 +325,7 @@ export function useVault(vaultAddress?: string | null) {
         address: vaultAddress as `0x${string}`,
         abi: USER_VAULT_ABI,
         functionName: 'withdrawAll',
-        gas: 200_000n,
+        gas: 500_000n,
       });
 
       setPendingTx(hash);
@@ -348,7 +348,7 @@ export function useVault(vaultAddress?: string | null) {
         abi: USER_VAULT_ABI,
         functionName: 'setStrategy',
         args: [type, parseEther(maxAmount)],
-        gas: 200_000n,
+        gas: 500_000n,
       });
 
       setPendingTx(hash);
@@ -371,7 +371,7 @@ export function useVault(vaultAddress?: string | null) {
         abi: USER_VAULT_ABI,
         functionName: 'setPaused',
         args: [isPaused],
-        gas: 200_000n,
+        gas: 500_000n,
       });
 
       setPendingTx(hash);
