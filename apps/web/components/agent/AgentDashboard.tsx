@@ -20,6 +20,7 @@ import { useState } from 'react';
 import { useVault } from '@/hooks/useVault';
 import { usePositions, useUserSettings, useTradeHistory } from '@/hooks/usePositions';
 import { useAgentStore, type Position } from '@/stores/agent';
+import { txToast } from '@/components/TxToast';
 
 const strategyColors = {
   CONSERVATIVE: 'success' as const,
@@ -90,8 +91,7 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
       depositModal.onClose();
       refetchBalance();
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Deposit failed:', error);
+      txToast('error', error instanceof Error ? error.message : 'Deposit failed');
     }
   };
 
@@ -103,8 +103,7 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
       withdrawModal.onClose();
       refetchBalance();
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Withdraw failed:', error);
+      txToast('error', error instanceof Error ? error.message : 'Withdraw failed');
     }
   };
 

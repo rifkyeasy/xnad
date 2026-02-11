@@ -12,6 +12,7 @@ import { Skeleton } from '@heroui/skeleton';
 
 import { useVaultFactory, useVault } from '@/hooks/useVault';
 import { useAgentStore, type StrategyType } from '@/stores/agent';
+import { txToast } from '@/components/TxToast';
 import { useWatchedXProfiles } from '@/hooks/useXProfiles';
 import { StrategyCards } from '@/components/agent/StrategyCards';
 import { AgentDashboard } from '@/components/agent/AgentDashboard';
@@ -95,8 +96,7 @@ export default function AgentPage() {
       setStopLoss(strategyConfig.stopLoss * 100);
       setTakeProfit(strategyConfig.takeProfit * 100);
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('Analysis error:', err);
+      txToast('error', err instanceof Error ? err.message : 'Analysis failed');
       setError(err instanceof Error ? err.message : 'Analysis failed');
     } finally {
       setIsAnalyzing(false);
@@ -114,10 +114,7 @@ export default function AgentPage() {
       let vault = vaultAddress;
 
       if (!hasVault) {
-        const txHash = await createVault();
-
-        // eslint-disable-next-line no-console
-        console.log('Vault creation tx:', txHash);
+        await createVault();
         await new Promise((r) => setTimeout(r, 3000));
         vault = vaultAddress;
       }
@@ -145,8 +142,7 @@ export default function AgentPage() {
         setVaultAddress(vault);
       }
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('Strategy selection error:', err);
+      txToast('error', err instanceof Error ? err.message : 'Failed to set strategy');
       setError(err instanceof Error ? err.message : 'Failed to set strategy');
     } finally {
       setIsCreatingVault(false);
@@ -169,7 +165,7 @@ export default function AgentPage() {
   // Dashboard
   if (step === 'dashboard' && vaultAddress) {
     return (
-      <div className="container mx-auto max-w-4xl py-8 px-4">
+      <div className="container mx-auto max-w-4xl px-4">
         <h1 className="text-2xl font-bold mb-6">AI Trading Agent</h1>
         <AgentDashboard vaultAddress={vaultAddress} />
       </div>

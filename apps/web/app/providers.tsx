@@ -10,6 +10,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
 
 import { wagmiConfig } from '@/config/wagmi';
+import { NetworkModal } from '@/components/NetworkModal';
+import { TxToastContainer } from '@/components/TxToast';
 
 export interface ProvidersProps {
   children: React.ReactNode;
@@ -38,7 +40,11 @@ export function Providers({ children, themeProps }: ProvidersProps) {
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <HeroUIProvider navigate={router.push}>
-          <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>
+          <NextThemesProvider {...themeProps}>
+            {children}
+            <NetworkModal />
+            <TxToastContainer />
+          </NextThemesProvider>
         </HeroUIProvider>
       </QueryClientProvider>
     </WagmiProvider>

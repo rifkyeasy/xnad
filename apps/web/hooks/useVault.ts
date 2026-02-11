@@ -5,6 +5,7 @@ import { parseEther, formatEther } from 'viem';
 import { useState } from 'react';
 
 import { VAULT_CONTRACTS } from '@/config/contracts';
+import { txToast } from '@/components/TxToast';
 
 const USER_VAULT_ABI = [
   {
@@ -136,11 +137,14 @@ export function useVaultFactory(userAddress?: string) {
   const { writeContractAsync } = useWriteContract();
 
   const createVault = async () => {
+    txToast('pending', 'Creating vault...');
     const hash = await writeContractAsync({
       address: VAULT_FACTORY_ADDRESS,
       abi: VAULT_FACTORY_ABI,
       functionName: 'createVault',
     });
+
+    txToast('success', 'Vault created!', hash);
 
     return hash;
   };
@@ -198,6 +202,7 @@ export function useVault(vaultAddress?: string | null) {
   });
 
   const deposit = async (amount: string) => {
+    txToast('pending', `Depositing ${amount} MON...`);
     const hash = await writeContractAsync({
       address: vaultAddress as `0x${string}`,
       abi: USER_VAULT_ABI,
@@ -206,11 +211,13 @@ export function useVault(vaultAddress?: string | null) {
     });
 
     setPendingTx(hash);
+    txToast('success', `Deposited ${amount} MON`, hash);
 
     return hash;
   };
 
   const withdraw = async (amount: string) => {
+    txToast('pending', `Withdrawing ${amount} MON...`);
     const hash = await writeContractAsync({
       address: vaultAddress as `0x${string}`,
       abi: USER_VAULT_ABI,
@@ -219,11 +226,13 @@ export function useVault(vaultAddress?: string | null) {
     });
 
     setPendingTx(hash);
+    txToast('success', `Withdrew ${amount} MON`, hash);
 
     return hash;
   };
 
   const withdrawAll = async () => {
+    txToast('pending', 'Withdrawing all MON...');
     const hash = await writeContractAsync({
       address: vaultAddress as `0x${string}`,
       abi: USER_VAULT_ABI,
@@ -231,11 +240,13 @@ export function useVault(vaultAddress?: string | null) {
     });
 
     setPendingTx(hash);
+    txToast('success', 'Withdrew all MON', hash);
 
     return hash;
   };
 
   const setStrategy = async (type: number, maxAmount: string) => {
+    txToast('pending', 'Setting strategy...');
     const hash = await writeContractAsync({
       address: vaultAddress as `0x${string}`,
       abi: USER_VAULT_ABI,
@@ -244,11 +255,13 @@ export function useVault(vaultAddress?: string | null) {
     });
 
     setPendingTx(hash);
+    txToast('success', 'Strategy updated!', hash);
 
     return hash;
   };
 
   const setPaused = async (isPaused: boolean) => {
+    txToast('pending', isPaused ? 'Pausing vault...' : 'Resuming vault...');
     const hash = await writeContractAsync({
       address: vaultAddress as `0x${string}`,
       abi: USER_VAULT_ABI,
@@ -257,6 +270,7 @@ export function useVault(vaultAddress?: string | null) {
     });
 
     setPendingTx(hash);
+    txToast('success', isPaused ? 'Vault paused' : 'Vault resumed', hash);
 
     return hash;
   };
