@@ -20,7 +20,6 @@ import { useState } from 'react';
 import { useVault } from '@/hooks/useVault';
 import { usePositions, useUserSettings, useTradeHistory } from '@/hooks/usePositions';
 import { useAgentStore, type Position } from '@/stores/agent';
-import { txToast } from '@/components/TxToast';
 
 const strategyColors = {
   CONSERVATIVE: 'success' as const,
@@ -90,8 +89,8 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
       setDepositAmount('');
       depositModal.onClose();
       refetchBalance();
-    } catch (error) {
-      txToast('error', error instanceof Error ? error.message : 'Deposit failed');
+    } catch {
+      // toast already shown by useVault
     }
   };
 
@@ -102,8 +101,8 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
       setWithdrawAmount('');
       withdrawModal.onClose();
       refetchBalance();
-    } catch (error) {
-      txToast('error', error instanceof Error ? error.message : 'Withdraw failed');
+    } catch {
+      // toast already shown by useVault
     }
   };
 
@@ -128,12 +127,7 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
             <p className="text-default-500 text-sm mb-5 max-w-sm mx-auto">
               Deposit MON to let the AI agent start trading on nad.fun for you.
             </p>
-            <Button
-              className="mx-auto"
-              color="success"
-              size="lg"
-              onPress={depositModal.onOpen}
-            >
+            <Button className="mx-auto" color="success" size="lg" onPress={depositModal.onOpen}>
               Deposit MON
             </Button>
           </CardBody>

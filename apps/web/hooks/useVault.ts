@@ -11,6 +11,38 @@ import { monadTestnet } from '@/config/wagmi';
 
 const CHAIN_ID = monadTestnet.id;
 
+/** Extract a short, readable message from viem/wallet errors */
+function getTxError(error: unknown, fallback: string): string {
+  if (!(error instanceof Error)) return fallback;
+  const msg = error.message;
+
+  // User rejected
+  if (
+    msg.includes('User denied') ||
+    msg.includes('user rejected') ||
+    msg.includes('User rejected')
+  ) {
+    return 'Transaction rejected';
+  }
+  // Insufficient funds
+  if (msg.includes('insufficient funds') || msg.includes('exceeds balance')) {
+    return 'Insufficient balance';
+  }
+  // Extract "Details:" line if present (viem format)
+  const detailsMatch = msg.match(/Details:\s*(.+)/);
+
+  if (detailsMatch) return detailsMatch[1].trim();
+  // Extract "shortMessage" from viem
+  const shortMatch = msg.match(/shortMessage['":\s]+([^"'\n]+)/);
+
+  if (shortMatch) return shortMatch[1].trim();
+
+  // Fallback: first line only, capped at 80 chars
+  const firstLine = msg.split('\n')[0];
+
+  return firstLine.length > 80 ? firstLine.slice(0, 77) + '...' : firstLine || fallback;
+}
+
 const USER_VAULT_ABI = [
   {
     inputs: [],
@@ -162,7 +194,7 @@ export function useVaultFactory(userAddress?: string) {
 
       return hash;
     } catch (error) {
-      txToast('error', error instanceof Error ? error.message : 'Vault creation failed');
+      txToast('error', getTxError(error, 'Vault creation failed'));
       throw error;
     }
   };
@@ -246,7 +278,7 @@ export function useVault(vaultAddress?: string | null) {
 
       return hash;
     } catch (error) {
-      txToast('error', error instanceof Error ? error.message : 'Deposit failed');
+      txToast('error', getTxError(error, 'Deposit failed'));
       throw error;
     }
   };
@@ -268,7 +300,7 @@ export function useVault(vaultAddress?: string | null) {
 
       return hash;
     } catch (error) {
-      txToast('error', error instanceof Error ? error.message : 'Withdraw failed');
+      txToast('error', getTxError(error, 'Withdraw failed'));
       throw error;
     }
   };
@@ -289,7 +321,7 @@ export function useVault(vaultAddress?: string | null) {
 
       return hash;
     } catch (error) {
-      txToast('error', error instanceof Error ? error.message : 'Withdraw failed');
+      txToast('error', getTxError(error, 'Withdraw failed'));
       throw error;
     }
   };
@@ -311,7 +343,7 @@ export function useVault(vaultAddress?: string | null) {
 
       return hash;
     } catch (error) {
-      txToast('error', error instanceof Error ? error.message : 'Strategy update failed');
+      txToast('error', getTxError(error, 'Strategy update failed'));
       throw error;
     }
   };
@@ -333,7 +365,7 @@ export function useVault(vaultAddress?: string | null) {
 
       return hash;
     } catch (error) {
-      txToast('error', error instanceof Error ? error.message : 'Failed');
+      txToast('error', getTxError(error, 'Transaction failed'));
       throw error;
     }
   };
