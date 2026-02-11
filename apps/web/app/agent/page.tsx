@@ -10,6 +10,8 @@ import { Progress } from '@heroui/progress';
 import { Avatar } from '@heroui/avatar';
 import { Skeleton } from '@heroui/skeleton';
 
+import { useQueryClient } from '@tanstack/react-query';
+
 import { useVaultFactory, useVault } from '@/hooks/useVault';
 import { useAgentStore, type StrategyType } from '@/stores/agent';
 import { txToast } from '@/components/TxToast';
@@ -44,6 +46,7 @@ export default function AgentPage() {
     setTakeProfit,
   } = useAgentStore();
 
+  const queryClient = useQueryClient();
   const [xInput, setXInput] = useState('');
   const [isCreatingVault, setIsCreatingVault] = useState(false);
   const { profiles: watchedProfiles, isLoading: profilesLoading } = useWatchedXProfiles();
@@ -111,13 +114,18 @@ export default function AgentPage() {
     setError(null);
 
     try {
-      let vault = vaultAddress;
-
       if (!hasVault) {
         await createVault();
-        await new Promise((r) => setTimeout(r, 3000));
-        vault = vaultAddress;
+        // Wait for tx to be indexed, then refresh all queries
+        await new Promise((r) => setTimeout(r, 4000));
+        await queryClient.invalidateQueries();
+        await new Promise((r) => setTimeout(r, 2000));
+        await queryClient.invalidateQueries();
       }
+
+      // vaultAddress may still be stale in this closure, so we use
+      // whatever the hook has OR fall back to setting step directly
+      const vault = vaultAddress;
 
       if (vault) {
         const strategyEnumMap: Record<StrategyType, StrategyEnum> = {
@@ -141,6 +149,9 @@ export default function AgentPage() {
 
         setVaultAddress(vault);
       }
+
+      // Force transition — the useEffect will also handle it once queries refresh
+      setStep('dashboard');
     } catch (err) {
       txToast('error', err instanceof Error ? err.message : 'Failed to set strategy');
       setError(err instanceof Error ? err.message : 'Failed to set strategy');

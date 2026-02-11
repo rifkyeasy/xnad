@@ -3,6 +3,7 @@
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseEther, formatEther } from 'viem';
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { VAULT_CONTRACTS } from '@/config/contracts';
 import { txToast } from '@/components/TxToast';
@@ -180,6 +181,7 @@ export function useVaultFactory(userAddress?: string) {
 
   const { writeContractAsync } = useWriteContract();
   const { ensureCorrectChain } = useChainCheck();
+  const queryClient = useQueryClient();
 
   const createVault = async () => {
     const ok = await ensureCorrectChain();
@@ -200,6 +202,7 @@ export function useVaultFactory(userAddress?: string) {
       });
 
       txToast('success', 'Vault created!', hash);
+      await queryClient.invalidateQueries();
 
       return hash;
     } catch (error) {
@@ -256,6 +259,7 @@ export function useVault(vaultAddress?: string | null) {
 
   const { writeContractAsync } = useWriteContract();
   const { ensureCorrectChain } = useChainCheck();
+  const queryClient = useQueryClient();
 
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({
     hash: pendingTx as `0x${string}`,
@@ -285,6 +289,7 @@ export function useVault(vaultAddress?: string | null) {
 
       setPendingTx(hash);
       txToast('success', `Deposited ${amount} MON`, hash);
+      await queryClient.invalidateQueries();
 
       return hash;
     } catch (error) {
@@ -308,6 +313,7 @@ export function useVault(vaultAddress?: string | null) {
 
       setPendingTx(hash);
       txToast('success', `Withdrew ${amount} MON`, hash);
+      await queryClient.invalidateQueries();
 
       return hash;
     } catch (error) {
@@ -330,6 +336,7 @@ export function useVault(vaultAddress?: string | null) {
 
       setPendingTx(hash);
       txToast('success', 'Withdrew all MON', hash);
+      await queryClient.invalidateQueries();
 
       return hash;
     } catch (error) {
@@ -353,6 +360,7 @@ export function useVault(vaultAddress?: string | null) {
 
       setPendingTx(hash);
       txToast('success', 'Strategy updated!', hash);
+      await queryClient.invalidateQueries();
 
       return hash;
     } catch (error) {
@@ -376,6 +384,7 @@ export function useVault(vaultAddress?: string | null) {
 
       setPendingTx(hash);
       txToast('success', isPaused ? 'Vault paused' : 'Vault resumed', hash);
+      await queryClient.invalidateQueries();
 
       return hash;
     } catch (error) {
