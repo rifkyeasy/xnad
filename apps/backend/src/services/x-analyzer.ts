@@ -24,20 +24,30 @@ interface Tweet {
 
 // Fetch tweets from X/Twitter
 async function fetchTweets(xHandle: string): Promise<Tweet[]> {
-  // Get profile ID first
-  const profileRes = await fetch(`https://tweethunter.io/api/convert2?inputString=${xHandle}`, {
-    headers: {
-      accept: '*/*',
-      'sec-fetch-dest': 'empty',
-      'sec-fetch-mode': 'cors',
-    },
-  });
+  // Get profile ID using RapidAPI Twitter endpoint
+  const profileRes = await fetch(
+    `https://twitter241.p.rapidapi.com/user?username=${xHandle}`,
+    {
+      method: 'GET',
+      headers: {
+        'x-rapidapi-key': process.env.X_RAPIDAPI_API_KEY || '',
+        'x-rapidapi-host': 'twitter241.p.rapidapi.com',
+      },
+    }
+  );
 
   if (!profileRes.ok) {
     throw new Error(`Failed to get profile for ${xHandle}`);
   }
 
-  const profile = (await profileRes.json()) as { userId: string };
+  const profileData = (await profileRes.json()) as {
+    result?: { data?: { user?: { result?: { rest_id?: string } } } };
+  };
+  const userId = profileData?.result?.data?.user?.result?.rest_id;
+  if (!userId) {
+    throw new Error(`Failed to get profile ID for ${xHandle}`);
+  }
+  const profile = { userId };
 
   // Fetch tweets
   const tweetsRes = await fetch(

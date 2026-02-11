@@ -19,6 +19,9 @@ ponder.on("VaultFactory:VaultCreated", async ({ event, context }) => {
     tradeCount: 0,
     createdAt: event.block.timestamp,
     createdTxHash: event.transaction.hash,
+  }).onConflictDoUpdate({
+    createdAt: event.block.timestamp,
+    createdTxHash: event.transaction.hash,
   });
 });
 
@@ -30,9 +33,15 @@ ponder.on("UserVault:Deposited", async ({ event, context }) => {
   const vaultId = event.log.address.toLowerCase();
   const { amount } = event.args;
 
+  // Upsert to handle deposits before VaultCreated is indexed
   await context.db
-    .update(schema.vault, { id: vaultId })
-    .set((row) => ({
+    .insert(schema.vault)
+    .values({
+      id: vaultId,
+      balance: amount,
+      totalDeposited: amount,
+    })
+    .onConflictDoUpdate((row) => ({
       balance: row.balance + amount,
       totalDeposited: row.totalDeposited + amount,
     }));
@@ -43,8 +52,13 @@ ponder.on("UserVault:Withdrawn", async ({ event, context }) => {
   const { amount } = event.args;
 
   await context.db
-    .update(schema.vault, { id: vaultId })
-    .set((row) => ({
+    .insert(schema.vault)
+    .values({
+      id: vaultId,
+      balance: -amount,
+      totalWithdrawn: amount,
+    })
+    .onConflictDoUpdate((row) => ({
       balance: row.balance - amount,
       totalWithdrawn: row.totalWithdrawn + amount,
     }));
@@ -55,8 +69,13 @@ ponder.on("UserVault:StrategyUpdated", async ({ event, context }) => {
   const { strategyType, maxTradeAmount } = event.args;
 
   await context.db
-    .update(schema.vault, { id: vaultId })
-    .set({
+    .insert(schema.vault)
+    .values({
+      id: vaultId,
+      strategyType,
+      maxTradeAmount,
+    })
+    .onConflictDoUpdate({
       strategyType,
       maxTradeAmount,
     });
@@ -70,16 +89,26 @@ ponder.on("UserVault:TradeExecuted", async ({ event, context }) => {
   if (isBuy) {
     // Buying: spend MON (amountIn), receive tokens (amountOut)
     await context.db
-      .update(schema.vault, { id: vaultId })
-      .set((row) => ({
+      .insert(schema.vault)
+      .values({
+        id: vaultId,
+        tradeCount: 1,
+        balance: -amountIn,
+      })
+      .onConflictDoUpdate((row) => ({
         tradeCount: row.tradeCount + 1,
         balance: row.balance - amountIn,
       }));
   } else {
     // Selling: spend tokens (amountIn), receive MON (amountOut)
     await context.db
-      .update(schema.vault, { id: vaultId })
-      .set((row) => ({
+      .insert(schema.vault)
+      .values({
+        id: vaultId,
+        tradeCount: 1,
+        balance: amountOut,
+      })
+      .onConflictDoUpdate((row) => ({
         tradeCount: row.tradeCount + 1,
         balance: row.balance + amountOut,
       }));
@@ -91,8 +120,12 @@ ponder.on("UserVault:Paused", async ({ event, context }) => {
   const { isPaused } = event.args;
 
   await context.db
-    .update(schema.vault, { id: vaultId })
-    .set({ paused: isPaused });
+    .insert(schema.vault)
+    .values({
+      id: vaultId,
+      paused: isPaused,
+    })
+    .onConflictDoUpdate({ paused: isPaused });
 });
 
 ponder.on("UserVault:AgentUpdated", async ({ event, context }) => {
@@ -100,6 +133,10 @@ ponder.on("UserVault:AgentUpdated", async ({ event, context }) => {
   const { newAgent } = event.args;
 
   await context.db
-    .update(schema.vault, { id: vaultId })
-    .set({ agent: newAgent });
+    .insert(schema.vault)
+    .values({
+      id: vaultId,
+      agent: newAgent,
+    })
+    .onConflictDoUpdate({ agent: newAgent });
 });

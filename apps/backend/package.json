@@ -25,6 +25,7 @@
     "@hono/zod-validator": "^0.4.2",
     "@prisma/adapter-pg": "^7.3.0",
     "@prisma/client": "^7.3.0",
+    "@prisma/client-runtime-utils": "^7.3.0",
     "dotenv": "^16.4.7",
     "hono": "^4.7.0",
     "openai": "^4.77.0",
