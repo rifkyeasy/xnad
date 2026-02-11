@@ -10,7 +10,7 @@ export interface XProfile {
   createdAt: string;
 }
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.xnad.fun';
+const BACKEND_URL = 'https://api.xnad.fun';
 
 async function fetchWatchedProfiles(): Promise<XProfile[]> {
   // Try local Next.js API route first, fall back to backend

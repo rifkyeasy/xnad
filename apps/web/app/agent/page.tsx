@@ -17,7 +17,7 @@ import { StrategyCards } from '@/components/agent/StrategyCards';
 import { AgentDashboard } from '@/components/agent/AgentDashboard';
 import { STRATEGY_CONFIG, StrategyType as StrategyEnum } from '@/config/contracts';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.xnad.fun';
+const BACKEND_URL = 'https://api.xnad.fun';
 
 export default function AgentPage() {
   const { isConnected, address } = useAccount();
