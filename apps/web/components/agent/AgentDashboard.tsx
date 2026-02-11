@@ -17,6 +17,9 @@ import { Progress } from '@heroui/progress';
 import { Spinner } from '@heroui/spinner';
 import { useState } from 'react';
 
+import { useAccount, useBalance } from 'wagmi';
+import { formatEther } from 'viem';
+
 import { useVault } from '@/hooks/useVault';
 import { usePositions, useUserSettings, useTradeHistory } from '@/hooks/usePositions';
 import { useAgentStore, type Position } from '@/stores/agent';
@@ -56,6 +59,10 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
   } = usePositions();
 
   const { settings, isLoading: settingsLoading, updateSettings } = useUserSettings();
+
+  const { address } = useAccount();
+  const { data: walletBalanceData } = useBalance({ address });
+  const walletBalance = walletBalanceData ? parseFloat(formatEther(walletBalanceData.value)) : 0;
 
   // Keep trade history hook for future use
   useTradeHistory(10);
@@ -266,24 +273,64 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
       </div>
 
       {/* Deposit Modal */}
-      <Modal isOpen={depositModal.isOpen} onClose={depositModal.onClose}>
+      <Modal isOpen={depositModal.isOpen} placement="center" onClose={depositModal.onClose}>
         <ModalContent>
-          <ModalHeader>Deposit MON</ModalHeader>
-          <ModalBody>
+          <ModalBody className="pt-6 pb-2 gap-4">
+            <div className="text-center">
+              <h3 className="text-lg font-bold">Deposit MON</h3>
+              <p className="text-xs text-default-500 mt-1">
+                Fund your vault so the AI agent can trade
+              </p>
+            </div>
+
+            <div className="flex justify-between items-center px-1">
+              <span className="text-xs text-default-500">Wallet Balance</span>
+              <span className="text-xs font-medium">{walletBalance.toFixed(4)} MON</span>
+            </div>
+
             <Input
-              endContent={<span className="text-default-400">MON</span>}
-              label="Amount"
+              endContent={
+                <button
+                  className="text-xs text-success font-medium hover:underline"
+                  type="button"
+                  onClick={() => setDepositAmount(Math.max(0, walletBalance - 0.01).toFixed(4))}
+                >
+                  MAX
+                </button>
+              }
               placeholder="0.0"
+              size="lg"
               type="number"
               value={depositAmount}
               onValueChange={setDepositAmount}
             />
+
+            <div className="flex gap-2">
+              {[0.1, 0.5, 1, 5].map((amt) => (
+                <Button
+                  key={amt}
+                  className="flex-1"
+                  isDisabled={walletBalance < amt}
+                  size="sm"
+                  variant="flat"
+                  onPress={() => setDepositAmount(String(amt))}
+                >
+                  {amt} MON
+                </Button>
+              ))}
+            </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={depositModal.onClose}>
+            <Button className="flex-1" variant="flat" onPress={depositModal.onClose}>
               Cancel
             </Button>
-            <Button color="primary" isLoading={isConfirming} onPress={handleDeposit}>
+            <Button
+              className="flex-1"
+              color="success"
+              isDisabled={!depositAmount || parseFloat(depositAmount) <= 0}
+              isLoading={isConfirming}
+              onPress={handleDeposit}
+            >
               Deposit
             </Button>
           </ModalFooter>
@@ -291,25 +338,72 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
       </Modal>
 
       {/* Withdraw Modal */}
-      <Modal isOpen={withdrawModal.isOpen} onClose={withdrawModal.onClose}>
+      <Modal isOpen={withdrawModal.isOpen} placement="center" onClose={withdrawModal.onClose}>
         <ModalContent>
-          <ModalHeader>Withdraw MON</ModalHeader>
-          <ModalBody>
+          <ModalBody className="pt-6 pb-2 gap-4">
+            <div className="text-center">
+              <h3 className="text-lg font-bold">Withdraw MON</h3>
+              <p className="text-xs text-default-500 mt-1">
+                Withdraw funds from your vault to wallet
+              </p>
+            </div>
+
+            <div className="flex justify-between items-center px-1">
+              <span className="text-xs text-default-500">Vault Balance</span>
+              <span className="text-xs font-medium">{parseFloat(balance).toFixed(4)} MON</span>
+            </div>
+
             <Input
-              description={`Available: ${balance} MON`}
-              endContent={<span className="text-default-400">MON</span>}
-              label="Amount"
+              endContent={
+                <button
+                  className="text-xs text-success font-medium hover:underline"
+                  type="button"
+                  onClick={() => setWithdrawAmount(balance)}
+                >
+                  MAX
+                </button>
+              }
               placeholder="0.0"
+              size="lg"
               type="number"
               value={withdrawAmount}
               onValueChange={setWithdrawAmount}
             />
+
+            <div className="flex gap-2">
+              {[25, 50, 75, 100].map((pct) => {
+                const amt = (parseFloat(balance) * pct) / 100;
+
+                return (
+                  <Button
+                    key={pct}
+                    className="flex-1"
+                    isDisabled={parseFloat(balance) <= 0}
+                    size="sm"
+                    variant="flat"
+                    onPress={() => setWithdrawAmount(amt.toFixed(4))}
+                  >
+                    {pct}%
+                  </Button>
+                );
+              })}
+            </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={withdrawModal.onClose}>
+            <Button className="flex-1" variant="flat" onPress={withdrawModal.onClose}>
               Cancel
             </Button>
-            <Button color="primary" isLoading={isConfirming} onPress={handleWithdraw}>
+            <Button
+              className="flex-1"
+              color="success"
+              isDisabled={
+                !withdrawAmount ||
+                parseFloat(withdrawAmount) <= 0 ||
+                parseFloat(withdrawAmount) > parseFloat(balance)
+              }
+              isLoading={isConfirming}
+              onPress={handleWithdraw}
+            >
               Withdraw
             </Button>
           </ModalFooter>

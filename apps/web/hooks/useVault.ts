@@ -24,6 +24,10 @@ function getTxError(error: unknown, fallback: string): string {
   ) {
     return 'Transaction rejected';
   }
+  // Wrong chain
+  if (msg.includes('does not match the target chain') || msg.includes('chain mismatch')) {
+    return 'Wrong network — please switch to Monad Testnet';
+  }
   // Insufficient funds
   if (msg.includes('insufficient funds') || msg.includes('exceeds balance')) {
     return 'Insufficient balance';
