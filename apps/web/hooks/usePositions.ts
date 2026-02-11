@@ -342,15 +342,15 @@ export function usePortfolioChart(vaultAddress?: string) {
     const points: ChartPoint[] = [];
 
     // Always start from 0
-    const depositTime = sorted.length > 0
-      ? new Date(sorted[0].createdAt).getTime() - 86400000
-      : now - 7 * 86400000;
+    const depositTime =
+      sorted.length > 0 ? new Date(sorted[0].createdAt).getTime() - 86400000 : now - 7 * 86400000;
+
     points.push({ date: formatChartDate(new Date(depositTime)), value: 0 });
 
     // Deposit point
-    const afterDepositTime = sorted.length > 0
-      ? new Date(sorted[0].createdAt).getTime() - 3600000
-      : now - 6 * 86400000;
+    const afterDepositTime =
+      sorted.length > 0 ? new Date(sorted[0].createdAt).getTime() - 3600000 : now - 6 * 86400000;
+
     points.push({ date: formatChartDate(new Date(afterDepositTime)), value: totalDeposited });
 
     // Each trade: time-proportional interpolation between deposit and current value
