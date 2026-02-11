@@ -83,7 +83,7 @@ export const MARKET_TOKENS = {
 export const TRADING_CONFIG = {
   maxBuyAmount: '0.1',         // Max MON per trade
   slippagePercent: 5,          // 5% slippage tolerance
-  minConfidence: 0.7,          // Minimum AI confidence to execute trade
+  minConfidence: 0.3,          // Minimum AI confidence to execute trade
   tradeIntervalMs: 30000,      // Auto-execute trades every 30 seconds
   xCheckIntervalMs: 3600000,   // Check X accounts every 1 hour
 };

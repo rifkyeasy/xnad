@@ -22,18 +22,27 @@ interface ProfileResponse {
 // Get X user profile (username -> userId)
 async function getProfile(username: string): Promise<ProfileResponse> {
   const res = await fetch(`https://tweethunter.io/api/convert2?inputString=${username}`, {
+    method: 'GET',
     headers: {
       accept: '*/*',
+      'accept-language': 'en-US,en;q=0.9',
       'sec-fetch-dest': 'empty',
       'sec-fetch-mode': 'cors',
+      'sec-fetch-site': 'same-origin',
+      Referer: 'https://tweethunter.io/twitter-id-converter',
     },
   });
 
   if (!res.ok) {
-    throw new Error(`Failed to get profile for ${username}`);
+    const body = await res.text().catch(() => '');
+    throw new Error(`Profile lookup failed for @${username} (${res.status}): ${body}`);
   }
 
   const data = (await res.json()) as { userId: string; username: string };
+  if (!data.userId) {
+    throw new Error(`No userId returned for @${username}`);
+  }
+
   return {
     userId: data.userId,
     username: data.username,
@@ -57,7 +66,8 @@ export async function getTweets(username: string): Promise<Tweet[]> {
     );
 
     if (!res.ok) {
-      throw new Error(`Failed to fetch tweets for ${username}`);
+      const body = await res.text().catch(() => '');
+      throw new Error(`RapidAPI tweets failed for @${username} (${res.status}): ${body}`);
     }
 
     const data = (await res.json()) as {
