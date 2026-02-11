@@ -6,6 +6,7 @@
 import type { Position } from './sell-manager.js';
 import { getNadFunClient } from './nadfun-client.js';
 import { formatEther, parseEther } from 'viem';
+import { log } from './logger.js';
 
 // Indexer API URL
 const INDEXER_URL = 'https://indexer.xnad.fun';
@@ -63,12 +64,12 @@ export class PositionManager {
     try {
       const res = await fetch(`${INDEXER_URL}/vaults/active`);
       if (!res.ok) {
-        console.error('Failed to fetch vaults from indexer:', res.status);
+        log.error(`Failed to fetch vaults from indexer: ${res.status}`);
         return this.getVaultsFromBackend();
       }
       return (await res.json()) as IndexerVault[];
     } catch (error) {
-      console.error('Indexer not available, falling back to backend:', error);
+      log.error('Indexer not available, falling back to backend', error);
       return this.getVaultsFromBackend();
     }
   }
@@ -115,12 +116,12 @@ export class PositionManager {
     try {
       const res = await fetch(`${INDEXER_URL}/vaults/${vaultAddress}/positions`);
       if (!res.ok) {
-        console.error('Failed to fetch positions from indexer:', res.status);
+        log.error(`Failed to fetch positions from indexer: ${res.status}`);
         return this.getPositionsFromBackend(vaultAddress);
       }
       return (await res.json()) as IndexerPosition[];
     } catch (error) {
-      console.error('Indexer not available, falling back to backend:', error);
+      log.error('Indexer not available, falling back to backend', error);
       return this.getPositionsFromBackend(vaultAddress);
     }
   }
@@ -183,7 +184,7 @@ export class PositionManager {
         return pricePerToken;
       }
     } catch (error) {
-      console.error(`Failed to get price for ${tokenAddress}:`, error);
+      log.error(`Failed to get price for ${tokenAddress}`, error);
     }
 
     return '0';
@@ -247,7 +248,7 @@ export class PositionManager {
       // Fetch vault from indexer
       const vaultRes = await fetch(`${INDEXER_URL}/vaults/${vaultAddress}`);
       if (!vaultRes.ok) {
-        console.error('Vault not found:', vaultAddress);
+        log.error(`Vault not found: ${vaultAddress}`);
         return null;
       }
       const vault = (await vaultRes.json()) as IndexerVault;
@@ -270,7 +271,7 @@ export class PositionManager {
         vaultBalance: formatEther(BigInt(vault.balance)),
       };
     } catch (error) {
-      console.error('Error fetching vault with positions:', error);
+      log.error('Error fetching vault with positions', error);
       return null;
     }
   }
@@ -303,7 +304,7 @@ export class PositionManager {
           vaultBalance: formatEther(BigInt(vault.balance)),
         });
       } catch (error) {
-        console.error(`Error processing vault ${vault.id}:`, error);
+        log.error(`Error processing vault ${vault.id}`, error);
       }
     }
 
@@ -334,7 +335,7 @@ export class PositionManager {
         }),
       });
     } catch (error) {
-      console.error('Failed to sync position to backend:', error);
+      log.error('Failed to sync position to backend', error);
     }
   }
 

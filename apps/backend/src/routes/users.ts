@@ -3,6 +3,7 @@ import { zValidator } from '@hono/zod-validator';
 import * as userService from '../services/user-service.js';
 import { CreateUserSchema, UpdateStrategySchema, AnalyzeXSchema } from '../types/index.js';
 import { analyzeXAccount } from '../services/x-analyzer.js';
+import { log } from '../logger.js';
 
 const users = new Hono();
 
@@ -61,7 +62,7 @@ users.post('/:walletAddress/analyze-x', zValidator('json', AnalyzeXSchema), asyn
       recommendedStrategy,
     });
   } catch (error) {
-    console.error('X analysis error:', error);
+    log.error('X analysis failed', error);
     return c.json({ error: 'Failed to analyze X account' }, 500);
   }
 });

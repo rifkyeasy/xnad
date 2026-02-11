@@ -4,6 +4,7 @@ import { logger } from 'hono/logger';
 import users from './routes/users.js';
 import trades from './routes/trades.js';
 import positions from './routes/positions.js';
+import { log } from './logger.js';
 
 const app = new Hono();
 
@@ -49,7 +50,7 @@ app.get('/api/tokens/:address', async (c) => {
 
     return c.json(tokenInfo);
   } catch (error) {
-    console.error('Error fetching token:', error);
+    log.error('Failed to fetch token', error);
     return c.json({ error: 'Failed to fetch token info' }, 500);
   }
 });
@@ -65,7 +66,7 @@ app.get('/api/tokens/:address/quote', async (c) => {
     const quote = await getQuote(address, amount, isBuy);
     return c.json(quote);
   } catch (error) {
-    console.error('Error getting quote:', error);
+    log.error('Failed to get quote', error);
     return c.json({ error: 'Failed to get quote' }, 500);
   }
 });
@@ -79,7 +80,7 @@ app.get('/api/wallet/:address/balances', async (c) => {
     const balances = await getWalletBalances(walletAddress);
     return c.json(balances);
   } catch (error) {
-    console.error('Error fetching balances:', error);
+    log.error('Failed to fetch balances', error);
     return c.json({ error: 'Failed to fetch balances' }, 500);
   }
 });
@@ -95,7 +96,7 @@ app.get('/api/indexer/vaults', async (c) => {
     if (!res.ok) return c.json({ error: 'Indexer unavailable' }, 503);
     return c.json(await res.json());
   } catch (error) {
-    console.error('Indexer error:', error);
+    log.error('Indexer unavailable', error);
     return c.json({ error: 'Indexer unavailable' }, 503);
   }
 });
@@ -107,7 +108,7 @@ app.get('/api/indexer/vaults/active', async (c) => {
     if (!res.ok) return c.json({ error: 'Indexer unavailable' }, 503);
     return c.json(await res.json());
   } catch (error) {
-    console.error('Indexer error:', error);
+    log.error('Indexer unavailable', error);
     return c.json({ error: 'Indexer unavailable' }, 503);
   }
 });
@@ -123,7 +124,7 @@ app.get('/api/indexer/vaults/:address', async (c) => {
     }
     return c.json(await res.json());
   } catch (error) {
-    console.error('Indexer error:', error);
+    log.error('Indexer unavailable', error);
     return c.json({ error: 'Indexer unavailable' }, 503);
   }
 });
@@ -136,7 +137,7 @@ app.get('/api/indexer/vaults/:address/positions', async (c) => {
     if (!res.ok) return c.json({ error: 'Indexer unavailable' }, 503);
     return c.json(await res.json());
   } catch (error) {
-    console.error('Indexer error:', error);
+    log.error('Indexer unavailable', error);
     return c.json({ error: 'Indexer unavailable' }, 503);
   }
 });
@@ -150,7 +151,7 @@ app.get('/api/indexer/vaults/:address/trades', async (c) => {
     if (!res.ok) return c.json({ error: 'Indexer unavailable' }, 503);
     return c.json(await res.json());
   } catch (error) {
-    console.error('Indexer error:', error);
+    log.error('Indexer unavailable', error);
     return c.json({ error: 'Indexer unavailable' }, 503);
   }
 });
@@ -162,7 +163,7 @@ app.get('/api/indexer/stats', async (c) => {
     if (!res.ok) return c.json({ error: 'Indexer unavailable' }, 503);
     return c.json(await res.json());
   } catch (error) {
-    console.error('Indexer error:', error);
+    log.error('Indexer unavailable', error);
     return c.json({ error: 'Indexer unavailable' }, 503);
   }
 });
@@ -178,7 +179,7 @@ app.get('/api/x/watched', async (c) => {
     const profiles = await getXProfiles(WATCHED_X_ACCOUNTS);
     return c.json(profiles);
   } catch (error) {
-    console.error('Error fetching watched profiles:', error);
+    log.error('Failed to fetch watched profiles', error);
     return c.json({ error: 'Failed to fetch profiles' }, 500);
   }
 });
@@ -194,14 +195,14 @@ app.get('/api/x/profile/:username', async (c) => {
     }
     return c.json(profile);
   } catch (error) {
-    console.error('Error fetching X profile:', error);
+    log.error('Failed to fetch X profile', error);
     return c.json({ error: 'Failed to fetch profile' }, 500);
   }
 });
 
 // Error handler
 app.onError((err, c) => {
-  console.error('Server error:', err);
+  log.error('Server error', err);
   return c.json({ error: 'Internal server error' }, 500);
 });
 

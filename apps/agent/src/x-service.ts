@@ -1,4 +1,5 @@
 import { ENV, SIGNAL_KEYWORDS } from './config.js';
+import { log } from './logger.js';
 
 export interface Tweet {
   id: string;
@@ -130,7 +131,7 @@ export async function getTweets(username: string): Promise<Tweet[]> {
 
     return tweets;
   } catch (error) {
-    console.error(`Error fetching tweets for ${username}:`, error);
+    log.error(`Failed to fetch tweets for @${username}`, error);
     return [];
   }
 }

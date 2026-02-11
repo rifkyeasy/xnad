@@ -5,6 +5,7 @@
 
 import { getNadFunClient } from './nadfun-client.js';
 import { ENV, TRADING_CONFIG } from './config.js';
+import { log } from './logger.js';
 import type { TradeSignal } from './ai-analyzer.js';
 
 export interface TradeResult {
@@ -60,13 +61,13 @@ class NadFunTradingClient implements TradingClient {
     const maxAmount = parseFloat(TRADING_CONFIG.maxBuyAmount);
     const amount = Math.min(requestedAmount, maxAmount).toString();
 
-    console.log(`\n--- Buying via nad.fun ---`);
-    console.log(`Token: ${signal.tokenAddress}`);
-    console.log(`Amount: ${amount} MON`);
-    console.log(`Confidence: ${(signal.confidence * 100).toFixed(0)}%`);
+    log.info(`--- Buying via nad.fun ---`);
+    log.info(`Token: ${signal.tokenAddress}`);
+    log.info(`Amount: ${amount} MON`);
+    log.info(`Confidence: ${(signal.confidence * 100).toFixed(0)}%`);
 
     if (ENV.DRY_RUN) {
-      console.log(`[DRY RUN] Would buy ${amount} MON worth of ${signal.tokenAddress}`);
+      log.info(`[DRY RUN] Would buy ${amount} MON worth of ${signal.tokenAddress}`);
       return {
         success: true,
         txHash: '0xDRY_RUN',
@@ -79,7 +80,7 @@ class NadFunTradingClient implements TradingClient {
     try {
       // Get quote first
       const quote = await this.client.getQuote(signal.tokenAddress, amount, true);
-      console.log(`Expected tokens: ${quote.amount}`);
+      log.info(`Expected tokens: ${quote.amount}`);
 
       const result = await this.client.buy({
         token: signal.tokenAddress,
@@ -97,7 +98,7 @@ class NadFunTradingClient implements TradingClient {
         amountOut: quote.amount,
       };
     } catch (error) {
-      console.error('Buy failed:', error);
+      log.error('Buy failed', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -109,12 +110,12 @@ class NadFunTradingClient implements TradingClient {
   }
 
   async executeSell(tokenAddress: string, amount: string): Promise<TradeResult> {
-    console.log(`\n--- Selling via nad.fun ---`);
-    console.log(`Token: ${tokenAddress}`);
-    console.log(`Amount: ${amount} tokens`);
+    log.info(`--- Selling via nad.fun ---`);
+    log.info(`Token: ${tokenAddress}`);
+    log.info(`Amount: ${amount} tokens`);
 
     if (ENV.DRY_RUN) {
-      console.log(`[DRY RUN] Would sell ${amount} tokens`);
+      log.info(`[DRY RUN] Would sell ${amount} tokens`);
       return {
         success: true,
         txHash: '0xDRY_RUN',
@@ -127,7 +128,7 @@ class NadFunTradingClient implements TradingClient {
     try {
       // Get quote first
       const quote = await this.client.getQuote(tokenAddress, amount, false);
-      console.log(`Expected MON: ${quote.amount}`);
+      log.info(`Expected MON: ${quote.amount}`);
 
       const result = await this.client.sell({
         token: tokenAddress,
@@ -145,7 +146,7 @@ class NadFunTradingClient implements TradingClient {
         amountOut: quote.amount,
       };
     } catch (error) {
-      console.error('Sell failed:', error);
+      log.error('Sell failed', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -170,7 +171,7 @@ let tradingClient: TradingClient | null = null;
  */
 export function getTradingClient(): TradingClient {
   if (!tradingClient) {
-    console.log('Initializing nad.fun trading client...');
+    log.info('Initializing nad.fun trading client...');
     tradingClient = new NadFunTradingClient();
   }
   return tradingClient;

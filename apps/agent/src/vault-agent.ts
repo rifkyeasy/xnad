@@ -9,6 +9,7 @@ import { SellManager, type Position, type SellTrigger } from './sell-manager.js'
 import { Rebalancer, type TargetAllocation, type RebalanceResult } from './rebalancer.js';
 import { getPositionManager, type VaultWithPositions } from './position-manager.js';
 import { getStrategyConfig, type StrategyConfig, type StrategyType } from './strategy-classifier.js';
+import { log } from './logger.js';
 
 // Backend API URL
 const BACKEND_URL = 'https://api.xnad.fun';
@@ -95,7 +96,7 @@ async function recordTrade(
       }),
     });
   } catch (error) {
-    console.error('Failed to record trade to backend:', error);
+    log.error('Failed to record trade to backend', error);
   }
 }
 
@@ -112,29 +113,25 @@ async function processVault(
   const strategyType = getStrategyFromType(vault.strategyType);
   const config = getStrategyConfig(strategyType);
 
-  console.log(`\n--- Processing Vault ${vault.id.slice(0, 10)}... ---`);
-  console.log(`  Owner: ${vault.owner.slice(0, 10)}...`);
-  console.log(`  Strategy: ${strategyType}`);
-  console.log(`  Balance: ${vaultBalance} MON`);
-  console.log(`  Positions: ${positions.length}`);
+  log.vault(log.addr(vault.id), {
+    Owner: log.addr(vault.owner),
+    Strategy: strategyType,
+    Balance: `${vaultBalance} MON`,
+    Positions: positions.length,
+  });
 
   if (positions.length === 0) {
-    console.log('  No positions to manage');
+    log.skip('No positions to manage');
     return;
   }
 
-  // Log position details
   for (const pos of positions) {
     const pnlPct = sellManager.calculatePnlPercent(pos);
-    console.log(
-      `    ${pos.tokenSymbol}: ${pos.balance} tokens, ` +
-      `value: ${parseFloat(pos.currentValue).toFixed(4)} MON, ` +
-      `P&L: ${pnlPct.toFixed(2)}%`
-    );
+    log.kv(pos.tokenSymbol, `${parseFloat(pos.currentValue).toFixed(2)} MON  P&L ${pnlPct.toFixed(2)}%`);
   }
 
   // 1. Check for stop-loss / take-profit
-  console.log(`\n  Checking stop-loss/take-profit...`);
+  log.info('Checking stop-loss / take-profit...');
   const { triggers, results: sellResults } = await sellManager.checkAndExecuteSells(
     vault.id,
     positions,
@@ -142,17 +139,17 @@ async function processVault(
   );
 
   if (triggers.length > 0) {
-    console.log(`  Triggered ${triggers.length} sells:`);
+    log.info(`Triggered ${triggers.length} sells`);
     for (const trigger of triggers) {
-      console.log(`    ${trigger.type}: ${trigger.reason}`);
+      log.trade('SELL', trigger.tokenAddress.slice(0, 8), '0', `${trigger.type}: ${trigger.reason}`);
     }
 
-    // Record trades to backend
     for (let i = 0; i < triggers.length; i++) {
       const trigger = triggers[i];
       const result = sellResults[i];
       if (result?.success) {
         state.sellsExecuted++;
+        log.tradeResult(true, `tx ${result.txHash}`);
         const pos = positions.find((p) => p.tokenAddress === trigger.tokenAddress);
         await recordTrade(
           vault.owner,
@@ -168,15 +165,14 @@ async function processVault(
       }
     }
   } else {
-    console.log('  No stop-loss/take-profit triggers');
+    log.skip('No stop-loss / take-profit triggers');
   }
 
-  // 2. Check for rebalancing (only if user has auto-rebalance enabled)
-  // For now, check via backend user settings
+  // 2. Check for rebalancing
   const shouldRebalance = await checkUserAutoRebalance(vault.owner);
 
   if (shouldRebalance) {
-    console.log(`\n  Checking rebalancing...`);
+    log.info('Checking rebalancing...');
     const targets = getTargetAllocations(positions);
 
     const rebalanceResult = await rebalancer.checkAndRebalance(
@@ -189,9 +185,8 @@ async function processVault(
 
     if (rebalanceResult && rebalanceResult.executed) {
       state.rebalancesExecuted++;
-      console.log(`  Executed ${rebalanceResult.trades.length} rebalance trades`);
+      log.success(`Executed ${rebalanceResult.trades.length} rebalance trades`);
 
-      // Record rebalance trades to backend
       for (let i = 0; i < rebalanceResult.trades.length; i++) {
         const trade = rebalanceResult.trades[i];
         const result = rebalanceResult.results[i];
@@ -210,12 +205,12 @@ async function processVault(
         }
       }
     } else if (rebalanceResult && !rebalanceResult.executed) {
-      console.log('  Rebalance not needed');
+      log.skip('Rebalance not needed');
     } else {
-      console.log('  Rebalance not due yet');
+      log.skip('Rebalance not due yet');
     }
   } else {
-    console.log('  Auto-rebalance disabled for this user');
+    log.skip('Auto-rebalance disabled');
   }
 
   state.processedVaults++;
@@ -244,55 +239,48 @@ async function runVaultAgentLoop(): Promise<void> {
   const rebalancer = new Rebalancer(vaultClient);
   const positionManager = getPositionManager();
 
-  console.log('\n========================================');
-  console.log('  Vault Management Agent');
-  console.log('  Auto Sell & Rebalancing');
-  console.log('========================================');
-  console.log(`Agent Wallet: ${vaultClient.address}`);
-  console.log(`Check interval: ${VAULT_CHECK_INTERVAL / 1000}s`);
-  console.log('========================================\n');
+  log.banner('Vault Agent', {
+    Wallet: log.addr(vaultClient.address),
+    Interval: `${VAULT_CHECK_INTERVAL / 1000}s`,
+    Mode: 'Auto Sell & Rebalancing',
+  });
 
   while (true) {
     try {
-      console.log(`\n=== Vault Agent Check (${new Date().toISOString()}) ===`);
+      log.section('Vault Check');
       state.lastRunAt = new Date();
 
-      // Get all active vaults with positions
       const vaultsWithPositions = await positionManager.getAllVaultsWithPositions();
 
       if (vaultsWithPositions.length === 0) {
-        console.log('No active vaults found');
+        log.skip('No active vaults found');
       } else {
-        console.log(`Found ${vaultsWithPositions.length} active vaults`);
+        log.info(`Found ${vaultsWithPositions.length} active vaults`);
 
-        // Process each vault
         for (const vaultData of vaultsWithPositions) {
           try {
             await processVault(vaultData, vaultClient, sellManager, rebalancer);
           } catch (error) {
             state.errors++;
-            console.error(`Error processing vault ${vaultData.vault.id}:`, error);
+            log.error(`Vault ${log.addr(vaultData.vault.id)} processing failed`, error);
           }
 
-          // Delay between vaults
           await new Promise((r) => setTimeout(r, 1000));
         }
       }
 
-      // Log status
-      console.log('\n--- Agent Status ---');
-      console.log(`Processed vaults: ${state.processedVaults}`);
-      console.log(`Sells executed: ${state.sellsExecuted}`);
-      console.log(`Rebalances executed: ${state.rebalancesExecuted}`);
-      console.log(`Errors: ${state.errors}`);
-      console.log(`Next check in ${VAULT_CHECK_INTERVAL / 1000}s...\n`);
+      log.status({
+        Vaults: state.processedVaults,
+        Sells: state.sellsExecuted,
+        Rebalances: state.rebalancesExecuted,
+        Errors: state.errors,
+        Next: `${VAULT_CHECK_INTERVAL / 1000}s`,
+      });
 
-      // Wait for next check
       await new Promise((r) => setTimeout(r, VAULT_CHECK_INTERVAL));
     } catch (error) {
       state.errors++;
-      console.error('Vault agent loop error:', error);
-      // Continue running after errors
+      log.error('Vault agent loop error', error);
       await new Promise((r) => setTimeout(r, 5000));
     }
   }
@@ -303,7 +291,7 @@ async function runVaultAgentLoop(): Promise<void> {
  */
 function validateEnv(): boolean {
   if (!ENV.PRIVATE_KEY) {
-    console.error('Missing PRIVATE_KEY environment variable');
+    log.fatal('Missing PRIVATE_KEY environment variable');
     return false;
   }
   return true;
@@ -313,7 +301,7 @@ function validateEnv(): boolean {
  * Main entry point
  */
 async function main(): Promise<void> {
-  console.log('Starting Vault Management Agent...\n');
+  log.info('Starting XNAD Vault Agent...');
 
   if (!validateEnv()) {
     process.exit(1);
@@ -322,7 +310,7 @@ async function main(): Promise<void> {
   try {
     await runVaultAgentLoop();
   } catch (error) {
-    console.error('Fatal error:', error);
+    log.fatal('Fatal error', error);
     process.exit(1);
   }
 }

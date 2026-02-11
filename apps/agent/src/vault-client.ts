@@ -8,6 +8,7 @@ import {
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ENV, NADFUN_CONTRACTS, VAULT_CONTRACTS } from './config.js';
+import { log } from './logger.js';
 
 // Monad testnet chain
 const monadTestnet = {
@@ -240,7 +241,7 @@ export class VaultClient {
         maxTradeAmount: formatEther(maxTradeAmount),
       };
     } catch (error) {
-      console.error('Error getting vault info:', error);
+      log.error('Error getting vault info', error);
       return null;
     }
   }
@@ -282,7 +283,7 @@ export class VaultClient {
         ],
       });
 
-      console.log(`Buy TX submitted: ${hash}`);
+      log.info(`Buy TX submitted: ${hash}`);
 
       // Wait for confirmation
       const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
@@ -329,7 +330,7 @@ export class VaultClient {
         ],
       });
 
-      console.log(`Sell TX submitted: ${hash}`);
+      log.info(`Sell TX submitted: ${hash}`);
 
       // Wait for confirmation
       const receipt = await this.publicClient.waitForTransactionReceipt({ hash });

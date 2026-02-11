@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { ENV } from './config.js';
 import type { Tweet } from './x-service.js';
+import { log } from './logger.js';
 
 const openai = new OpenAI({
   apiKey: ENV.OPENAI_API_KEY,
@@ -98,7 +99,7 @@ Respond with JSON:
       summary: signal.reasoning,
     };
   } catch (error) {
-    console.error('Error analyzing tweet:', error);
+    log.error('Failed to analyze tweet', error);
     return {
       tweet,
       signal: null,
@@ -208,7 +209,7 @@ Respond with JSON:
 
     return JSON.parse(jsonMatch[0]) as UserXAnalysis;
   } catch (error) {
-    console.error('Error analyzing user X:', error);
+    log.error('Failed to analyze user X profile', error);
     // Return default analysis on error
     return {
       xHandle,

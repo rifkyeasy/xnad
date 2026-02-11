@@ -1,6 +1,7 @@
 import { VaultClient, type TradeResult } from './vault-client.js';
 import type { Position } from './sell-manager.js';
 import type { StrategyConfig } from './strategy-classifier.js';
+import { log } from './logger.js';
 
 export interface TargetAllocation {
   tokenAddress: string;
@@ -115,14 +116,14 @@ export class Rebalancer {
   ): Promise<RebalanceResult> {
     const results: TradeResult[] = [];
 
-    console.log(`\n=== Executing Rebalance (${trades.length} trades) ===`);
+    log.info(`=== Executing Rebalance (${trades.length} trades) ===`);
 
     // Execute sells first to free up MON
     const sellTrades = trades.filter((t) => t.action === 'sell');
     const buyTrades = trades.filter((t) => t.action === 'buy');
 
     for (const trade of sellTrades) {
-      console.log(`Selling ${trade.amount} ${trade.tokenSymbol}: ${trade.reason}`);
+      log.info(`Selling ${trade.amount} ${trade.tokenSymbol}: ${trade.reason}`);
 
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
 
@@ -142,7 +143,7 @@ export class Rebalancer {
 
     // Then execute buys
     for (const trade of buyTrades) {
-      console.log(`Buying ${trade.amount} MON of ${trade.tokenSymbol}: ${trade.reason}`);
+      log.info(`Buying ${trade.amount} MON of ${trade.tokenSymbol}: ${trade.reason}`);
 
       // Check if amount exceeds max trade
       const amount = Math.min(parseFloat(trade.amount), parseFloat(config.maxTradeAmount));
@@ -164,7 +165,7 @@ export class Rebalancer {
     // Update last rebalance time
     this.lastRebalanceTime.set(vaultAddress, Date.now());
 
-    console.log(
+    log.info(
       `Rebalance complete: ${results.filter((r) => r.success).length}/${results.length} successful`
     );
 
@@ -192,7 +193,7 @@ export class Rebalancer {
     const trades = this.calculateRebalanceTrades(positions, targets, vaultBalance);
 
     if (trades.length === 0) {
-      console.log('No rebalancing needed - allocations within threshold');
+      log.info('No rebalancing needed - allocations within threshold');
       this.lastRebalanceTime.set(vaultAddress, Date.now());
       return { trades: [], executed: false, results: [] };
     }

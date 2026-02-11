@@ -1,5 +1,6 @@
 import { VaultClient, type TradeResult } from './vault-client.js';
 import type { StrategyConfig } from './strategy-classifier.js';
+import { log } from './logger.js';
 
 export interface Position {
   tokenAddress: string;
@@ -67,10 +68,10 @@ export class SellManager {
     position: Position,
     trigger: SellTrigger
   ): Promise<TradeResult> {
-    console.log(`\n--- Executing ${trigger.type.toUpperCase()} ---`);
-    console.log(`Token: ${position.tokenSymbol} (${position.tokenAddress})`);
-    console.log(`Reason: ${trigger.reason}`);
-    console.log(`Amount: ${position.balance} tokens`);
+    log.info(`--- Executing ${trigger.type.toUpperCase()} ---`);
+    log.info(`Token: ${position.tokenSymbol} (${position.tokenAddress})`);
+    log.info(`Reason: ${trigger.reason}`);
+    log.info(`Amount: ${position.balance} tokens`);
 
     // Calculate min output with 5% slippage for emergency sells
     const slippage = trigger.type === 'stop_loss' ? 10 : 5; // Higher slippage for stop-loss
@@ -87,9 +88,9 @@ export class SellManager {
     );
 
     if (result.success) {
-      console.log(`SUCCESS: ${result.txHash}`);
+      log.info(`SUCCESS: ${result.txHash}`);
     } else {
-      console.log(`FAILED: ${result.error}`);
+      log.info(`FAILED: ${result.error}`);
     }
 
     return result;

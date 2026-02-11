@@ -2,62 +2,70 @@ import { WATCHED_ACCOUNTS, TRADING_CONFIG, ENV } from './config.js';
 import { getTweets, filterSignalTweets, extractTokenAddresses } from './x-service.js';
 import { analyzeTweet, getActionableSignals, type TweetAnalysis } from './ai-analyzer.js';
 import { getTradingClient, type TradingClient, type TradeResult } from './trading-client.js';
+import { log } from './logger.js';
 
 // Track processed tweet IDs to avoid duplicates
 const processedTweets = new Set<string>();
 
-// Trade history for logging
+// Pending signals waiting to be executed
+let pendingSignals: TweetAnalysis[] = [];
+
+// Trade history
 const tradeHistory: TradeResult[] = [];
+
+// Last X check timestamp
+let lastXCheckAt = 0;
 
 async function fetchAndAnalyzeTweets(): Promise<TweetAnalysis[]> {
   const allAnalyses: TweetAnalysis[] = [];
 
-  console.log(`\n=== Fetching tweets from ${WATCHED_ACCOUNTS.length} accounts ===`);
+  log.section(`Checking ${WATCHED_ACCOUNTS.length} X accounts`);
 
   for (const account of WATCHED_ACCOUNTS) {
     try {
-      console.log(`\nChecking @${account}...`);
+      log.x('Scanning', `@${account}`);
       const tweets = await getTweets(account);
 
-      // Filter out already processed tweets
       const newTweets = tweets.filter((t) => !processedTweets.has(t.id));
       if (newTweets.length === 0) {
-        console.log(`  No new tweets from @${account}`);
+        log.skip(`No new tweets from @${account}`);
         continue;
       }
 
-      console.log(`  Found ${newTweets.length} new tweets`);
+      log.info(`Found ${newTweets.length} new tweets from @${account}`);
 
-      // Filter for signal keywords
       const signalTweets = filterSignalTweets(newTweets);
-      console.log(`  ${signalTweets.length} contain signal keywords`);
+      if (signalTweets.length === 0) {
+        log.skip(`No signal keywords in tweets from @${account}`);
+        continue;
+      }
 
-      // Analyze each signal tweet
+      log.info(`${signalTweets.length} tweets contain signal keywords`);
+
       for (const tweet of signalTweets) {
-        // Mark as processed
         processedTweets.add(tweet.id);
 
-        // Extract any token addresses from the tweet
         const addresses = extractTokenAddresses(tweet);
         if (addresses.length > 0) {
-          console.log(`  Found token addresses: ${addresses.join(', ')}`);
+          log.info(`Token addresses: ${addresses.join(', ')}`);
         }
 
-        // Analyze with AI
         const analysis = await analyzeTweet(tweet);
         allAnalyses.push(analysis);
 
         if (analysis.signal) {
-          console.log(`  Signal: ${analysis.signal.action.toUpperCase()}`);
-          console.log(`  Confidence: ${(analysis.signal.confidence * 100).toFixed(0)}%`);
-          console.log(`  Risk: ${analysis.signal.riskLevel}`);
+          log.tweet(
+            account,
+            `${analysis.signal.action.toUpperCase()} ${analysis.signal.tokenSymbol || ''}`,
+            analysis.signal.confidence
+          );
+          log.kv('Risk', analysis.signal.riskLevel);
         }
       }
 
-      // Rate limit between accounts
       await new Promise((r) => setTimeout(r, 1000));
     } catch (error) {
-      console.error(`Error processing @${account}:`, error);
+      log.error(`Failed to process @${account}`, error);
     }
   }
 
@@ -70,45 +78,44 @@ async function executeSignals(
 ): Promise<TradeResult[]> {
   const results: TradeResult[] = [];
 
-  // Get actionable signals (high confidence, has token address)
   const actionable = getActionableSignals(analyses, TRADING_CONFIG.minConfidence);
 
   if (actionable.length === 0) {
-    console.log('\nNo actionable signals found');
+    log.skip('No actionable signals to execute');
     return results;
   }
 
-  console.log(`\n=== Executing ${actionable.length} trades ===`);
+  log.section(`Executing ${actionable.length} trades`);
 
   for (const analysis of actionable) {
     if (!analysis.signal) continue;
 
-    console.log(`\nTrade: ${analysis.signal.action.toUpperCase()}`);
-    console.log(`Token: ${analysis.signal.tokenAddress || analysis.signal.tokenSymbol}`);
-    console.log(`Reason: ${analysis.signal.reasoning}`);
+    const symbol = analysis.signal.tokenSymbol || analysis.signal.tokenAddress || 'UNKNOWN';
+    const amount = analysis.signal.suggestedAmount || TRADING_CONFIG.maxBuyAmount;
 
-    // Execute the trade
+    log.trade(
+      analysis.signal.action === 'buy' ? 'BUY' : 'SELL',
+      symbol,
+      amount,
+      analysis.signal.reasoning
+    );
+
     let result: TradeResult;
     if (analysis.signal.action === 'buy') {
       result = await client.executeBuy(analysis.signal);
     } else if (analysis.signal.action === 'sell' && analysis.signal.tokenAddress) {
-      const amount = analysis.signal.suggestedAmount || '0';
-      result = await client.executeSell(analysis.signal.tokenAddress, amount);
+      const sellAmount = analysis.signal.suggestedAmount || '0';
+      result = await client.executeSell(analysis.signal.tokenAddress, sellAmount);
     } else {
-      console.log('SKIPPED: Hold signal or missing token address');
+      log.skip('Hold signal or missing token address');
       continue;
     }
 
     results.push(result);
     tradeHistory.push(result);
 
-    if (result.success) {
-      console.log(`SUCCESS: ${result.txHash}`);
-    } else {
-      console.log(`FAILED: ${result.error}`);
-    }
+    log.tradeResult(result.success, result.success ? `tx ${result.txHash}` : `${result.error}`);
 
-    // Delay between trades
     await new Promise((r) => setTimeout(r, 2000));
   }
 
@@ -116,46 +123,55 @@ async function executeSignals(
 }
 
 async function runAgentLoop(client: TradingClient): Promise<void> {
-  console.log('\n========================================');
-  console.log('  Social-Execution Trading Agent');
-  console.log('  Powered by nad.fun');
-  console.log('========================================');
-  console.log(`Wallet: ${client.address}`);
-  console.log(`Balance: ${await client.getBalance()} MON`);
-  console.log(`Watching: ${WATCHED_ACCOUNTS.join(', ')}`);
-  console.log(`Poll interval: ${TRADING_CONFIG.pollIntervalMs / 1000}s`);
-  console.log(`Min confidence: ${TRADING_CONFIG.minConfidence * 100}%`);
-  console.log(`Max buy: ${TRADING_CONFIG.maxBuyAmount} MON`);
-  console.log('========================================\n');
+  log.banner('Trading Agent', {
+    Wallet: log.addr(client.address),
+    Balance: `${await client.getBalance()} MON`,
+    Watching: WATCHED_ACCOUNTS.join(', '),
+    'X Check': `${TRADING_CONFIG.xCheckIntervalMs / 60000} min`,
+    'Trade Loop': `${TRADING_CONFIG.tradeIntervalMs / 1000}s`,
+    'Min Confidence': `${TRADING_CONFIG.minConfidence * 100}%`,
+    'Max Buy': `${TRADING_CONFIG.maxBuyAmount} MON`,
+    'Dry Run': ENV.DRY_RUN ? 'Yes' : 'No',
+  });
 
   while (true) {
     try {
-      // Fetch and analyze tweets
-      const analyses = await fetchAndAnalyzeTweets();
+      const now = Date.now();
 
-      // Execute trades for actionable signals
-      if (analyses.length > 0) {
-        await executeSignals(client, analyses);
+      // Check X accounts every hour
+      if (now - lastXCheckAt >= TRADING_CONFIG.xCheckIntervalMs) {
+        lastXCheckAt = now;
+        const analyses = await fetchAndAnalyzeTweets();
+        if (analyses.length > 0) {
+          pendingSignals.push(...analyses);
+          log.info(`Queued ${analyses.length} new signals (${pendingSignals.length} pending)`);
+        }
       }
 
-      // Log status
-      console.log(`\n--- Status ---`);
-      console.log(`Processed tweets: ${processedTweets.size}`);
-      console.log(`Total trades: ${tradeHistory.length}`);
-      console.log(`Successful: ${tradeHistory.filter((t) => t.success).length}`);
-      console.log(`Next check in ${TRADING_CONFIG.pollIntervalMs / 1000}s...\n`);
+      // Execute pending signals every 30 seconds
+      if (pendingSignals.length > 0) {
+        const toExecute = pendingSignals.splice(0, pendingSignals.length);
+        await executeSignals(client, toExecute);
+      }
 
-      // Wait for next poll
-      await new Promise((r) => setTimeout(r, TRADING_CONFIG.pollIntervalMs));
+      // Status
+      const nextXCheck = Math.max(0, TRADING_CONFIG.xCheckIntervalMs - (Date.now() - lastXCheckAt));
+      log.status({
+        Tweets: processedTweets.size,
+        Trades: tradeHistory.length,
+        Won: tradeHistory.filter((t) => t.success).length,
+        Pending: pendingSignals.length,
+        'Next X': `${Math.ceil(nextXCheck / 60000)}m`,
+      });
+
+      await new Promise((r) => setTimeout(r, TRADING_CONFIG.tradeIntervalMs));
     } catch (error) {
-      console.error('Agent loop error:', error);
-      // Continue running after errors
+      log.error('Agent loop error', error);
       await new Promise((r) => setTimeout(r, 5000));
     }
   }
 }
 
-// Validate environment
 function validateEnv(): boolean {
   const missing: string[] = [];
 
@@ -164,17 +180,18 @@ function validateEnv(): boolean {
   if (!ENV.PRIVATE_KEY) missing.push('PRIVATE_KEY');
 
   if (missing.length > 0) {
-    console.error('Missing required environment variables:');
-    missing.forEach((v) => console.error(`  - ${v}`));
+    log.fatal('Missing required environment variables');
+    for (const v of missing) {
+      log.kv('Missing', v);
+    }
     return false;
   }
 
   return true;
 }
 
-// Main entry point
 async function main(): Promise<void> {
-  console.log('Starting Social-Execution Trading Agent...\n');
+  log.info('Starting XNAD Trading Agent...');
 
   if (!validateEnv()) {
     process.exit(1);
@@ -184,7 +201,7 @@ async function main(): Promise<void> {
     const client = getTradingClient();
     await runAgentLoop(client);
   } catch (error) {
-    console.error('Fatal error:', error);
+    log.fatal('Fatal error', error);
     process.exit(1);
   }
 }

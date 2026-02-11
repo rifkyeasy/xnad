@@ -4,6 +4,7 @@
  */
 
 import { createPublicClient, http, formatEther, type Address } from 'viem';
+import { log } from '../logger.js';
 
 // Monad testnet chain config
 const monadTestnet = {
@@ -140,7 +141,7 @@ export async function getNadFunTokenInfo(tokenAddress: string): Promise<TokenInf
       totalSupply: formatEther(totalSupply),
     };
   } catch (error) {
-    console.error('Error fetching token info:', error);
+    log.error('Failed to fetch token info', error);
     return null;
   }
 }
@@ -170,7 +171,7 @@ export async function getQuote(
       router: NADFUN_CONTRACTS.bondingCurveRouter,
     };
   } catch (error) {
-    console.error('Error getting quote:', error);
+    log.error('Failed to get quote', error);
     return {
       amountIn,
       amountOut: '0',
@@ -195,7 +196,7 @@ export async function getWalletBalances(walletAddress: string): Promise<WalletBa
       tokens: [], // Tokens are fetched individually as needed
     };
   } catch (error) {
-    console.error('Error fetching wallet balances:', error);
+    log.error('Failed to fetch wallet balances', error);
     return {
       mon: '0',
       tokens: [],
@@ -220,7 +221,7 @@ export async function getTokenBalance(
 
     return formatEther(balance);
   } catch (error) {
-    console.error('Error fetching token balance:', error);
+    log.error('Failed to fetch token balance', error);
     return '0';
   }
 }

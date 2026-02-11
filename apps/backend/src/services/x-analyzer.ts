@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { StrategyType } from '../db/client.js';
 import type { XAnalysis } from '../types/index.js';
+import { log } from '../logger.js';
 
 const USE_MOCK_DATA = process.env.USE_MOCK_DATA === 'true';
 
@@ -211,7 +212,7 @@ export async function analyzeXAccount(
 ): Promise<{ analysis: XAnalysis; recommendedStrategy: StrategyType }> {
   // Use mock data in testnet mode
   if (USE_MOCK_DATA) {
-    console.log(`[MOCK] Analyzing X account @${xHandle}`);
+    log.info(`Analyzing X account @${xHandle} (mock)`);
     // Add a small delay to simulate API call
     await new Promise((r) => setTimeout(r, 1500));
     return getMockAnalysis(xHandle);

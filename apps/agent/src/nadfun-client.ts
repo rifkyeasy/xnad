@@ -5,6 +5,7 @@
 
 import { initSDK, parseEther, formatEther } from '@nadfun/sdk';
 import { ENV } from './config.js';
+import { log } from './logger.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -87,9 +88,9 @@ export class NadFunClient {
    * Create a new token on nad.fun
    */
   async createToken(params: TokenCreateParams): Promise<TokenCreateResult> {
-    console.log(`\n--- Creating Token on nad.fun ---`);
-    console.log(`Name: ${params.name}`);
-    console.log(`Symbol: ${params.symbol}`);
+    log.info(`--- Creating Token on nad.fun ---`);
+    log.info(`Name: ${params.name}`);
+    log.info(`Symbol: ${params.symbol}`);
 
     let imageBuffer: Buffer;
     let imageContentType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/svg+xml' = 'image/png';
@@ -124,12 +125,12 @@ export class NadFunClient {
 
     // Get deploy fee
     const fee = await this.getDeployFee();
-    console.log(`Deploy Fee: ${fee} MON`);
+    log.info(`Deploy Fee: ${fee} MON`);
 
     if (initialBuyAmount > 0n) {
       const expectedTokens = await this.getInitialBuyTokens(params.initialBuyAmount || '0');
-      console.log(`Initial Buy: ${params.initialBuyAmount} MON`);
-      console.log(`Expected Tokens: ${expectedTokens}`);
+      log.info(`Initial Buy: ${params.initialBuyAmount} MON`);
+      log.info(`Expected Tokens: ${expectedTokens}`);
     }
 
     try {
@@ -145,10 +146,10 @@ export class NadFunClient {
         initialBuyAmount,
       });
 
-      console.log(`\n✓ Token Created!`);
-      console.log(`Token Address: ${result.tokenAddress}`);
-      console.log(`Pool Address: ${result.poolAddress}`);
-      console.log(`TX Hash: ${result.transactionHash}`);
+      log.info(`Token Created!`);
+      log.info(`Token Address: ${result.tokenAddress}`);
+      log.info(`Pool Address: ${result.poolAddress}`);
+      log.info(`TX Hash: ${result.transactionHash}`);
 
       return {
         tokenAddress: result.tokenAddress,
@@ -156,7 +157,7 @@ export class NadFunClient {
         txHash: result.transactionHash,
       };
     } catch (error) {
-      console.error('Token creation failed:', error);
+      log.error('Token creation failed', error);
       throw error;
     }
   }
@@ -165,9 +166,9 @@ export class NadFunClient {
    * Buy tokens on nad.fun
    */
   async buy(params: TradeParams): Promise<TradeResult> {
-    console.log(`\n--- Buying on nad.fun ---`);
-    console.log(`Token: ${params.token}`);
-    console.log(`Amount: ${params.amountIn} MON`);
+    log.info(`--- Buying on nad.fun ---`);
+    log.info(`Token: ${params.token}`);
+    log.info(`Amount: ${params.amountIn} MON`);
 
     try {
       const txHash = await this.sdk.simpleBuy({
@@ -176,14 +177,14 @@ export class NadFunClient {
         slippagePercent: params.slippagePercent || 2,
       });
 
-      console.log(`TX Hash: ${txHash}`);
+      log.info(`TX Hash: ${txHash}`);
 
       return {
         success: true,
         txHash,
       };
     } catch (error) {
-      console.error('Buy failed:', error);
+      log.error('Buy failed', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -195,9 +196,9 @@ export class NadFunClient {
    * Sell tokens on nad.fun
    */
   async sell(params: TradeParams): Promise<TradeResult> {
-    console.log(`\n--- Selling on nad.fun ---`);
-    console.log(`Token: ${params.token}`);
-    console.log(`Amount: ${params.amountIn} tokens`);
+    log.info(`--- Selling on nad.fun ---`);
+    log.info(`Token: ${params.token}`);
+    log.info(`Amount: ${params.amountIn} tokens`);
 
     try {
       const txHash = await this.sdk.simpleSell({
@@ -206,14 +207,14 @@ export class NadFunClient {
         slippagePercent: params.slippagePercent || 2,
       });
 
-      console.log(`TX Hash: ${txHash}`);
+      log.info(`TX Hash: ${txHash}`);
 
       return {
         success: true,
         txHash,
       };
     } catch (error) {
-      console.error('Sell failed:', error);
+      log.error('Sell failed', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

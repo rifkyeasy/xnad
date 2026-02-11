@@ -3,6 +3,8 @@
  * Fetches X/Twitter profile metadata using tweethunter.io API
  */
 
+import { log } from '../logger.js';
+
 export interface XProfile {
   name: string;
   username: string;
@@ -41,7 +43,7 @@ export async function getXProfile(username: string): Promise<XProfile | null> {
     });
 
     if (!res.ok) {
-      console.error(`Failed to fetch X profile for ${username}: ${res.status}`);
+      log.warn(`X profile fetch failed for @${username} (${res.status})`);
       return null;
     }
 
@@ -66,7 +68,7 @@ export async function getXProfile(username: string): Promise<XProfile | null> {
 
     return profile;
   } catch (error) {
-    console.error(`Error fetching X profile for ${username}:`, error);
+    log.error(`Failed to fetch X profile for @${username}`, error);
     return null;
   }
 }

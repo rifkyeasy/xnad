@@ -6,15 +6,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Load .env from monorepo root
 config({ path: path.resolve(__dirname, '../../../.env') });
 
-// Popular crypto/Monad X accounts to monitor
+// X accounts to monitor for trading signals
 export const WATCHED_ACCOUNTS = [
-  'moaborz', // Monad co-founder
-  'notthreadguy', // Monad co-founder
-  '0xsmac', // Monad
-  'nikitosk', // Monad community
-  'nad_fun', // nad.fun official
-  'molooch', // Monad community
-  'MonadChad', // Monad community
+  'MugiwaraOneup',
+  'DraliensNFT',
 ];
 
 // Keywords that indicate a potential trade signal
@@ -86,10 +81,11 @@ export const MARKET_TOKENS = {
 
 // Trading config
 export const TRADING_CONFIG = {
-  maxBuyAmount: '0.1', // Max MON per trade
-  slippagePercent: 5, // 5% slippage tolerance
-  minConfidence: 0.7, // Minimum AI confidence to execute trade
-  pollIntervalMs: 60000, // Check every 60 seconds
+  maxBuyAmount: '0.1',         // Max MON per trade
+  slippagePercent: 5,          // 5% slippage tolerance
+  minConfidence: 0.7,          // Minimum AI confidence to execute trade
+  tradeIntervalMs: 30000,      // Auto-execute trades every 30 seconds
+  xCheckIntervalMs: 3600000,   // Check X accounts every 1 hour
 };
 
 // Environment variables
