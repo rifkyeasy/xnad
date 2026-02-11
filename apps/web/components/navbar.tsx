@@ -30,6 +30,7 @@ export const Navbar = () => {
 
   return (
     <HeroUINavbar maxWidth="xl" position="sticky">
+      {/* Left: Brand + Desktop nav links */}
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
           <NextLink className="flex justify-start items-center gap-2" href="/">
@@ -46,7 +47,7 @@ export const Navbar = () => {
             )}
           </NextLink>
         </NavbarBrand>
-        <ul className="hidden lg:flex gap-4 justify-start ml-2">
+        <ul className="hidden md:flex gap-4 justify-start ml-2">
           {siteConfig.navItems.map((item) => (
             <NavbarItem key={item.href}>
               <NextLink
@@ -64,8 +65,9 @@ export const Navbar = () => {
         </ul>
       </NavbarContent>
 
-      <NavbarContent className="hidden sm:flex basis-1/5 sm:basis-full" justify="end">
-        <NavbarItem className="hidden sm:flex gap-2">
+      {/* Right: Desktop icons + wallet */}
+      <NavbarContent className="hidden md:flex basis-1/5 md:basis-full" justify="end">
+        <NavbarItem className="hidden md:flex gap-2">
           <Link isExternal aria-label="Twitter" href={siteConfig.links.twitter}>
             <TwitterIcon className="text-default-500" />
           </Link>
@@ -79,11 +81,14 @@ export const Navbar = () => {
         </NavbarItem>
       </NavbarContent>
 
-      <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
+      {/* Right: Mobile wallet + hamburger */}
+      <NavbarContent className="md:hidden basis-1 pl-4" justify="end">
+        <WalletButton />
         <ThemeSwitch />
         <NavbarMenuToggle />
       </NavbarContent>
 
+      {/* Mobile menu dropdown */}
       <NavbarMenu>
         <div className="mx-4 mt-2 flex flex-col gap-2">
           {siteConfig.navMenuItems.map((item, index) => (
@@ -93,6 +98,16 @@ export const Navbar = () => {
               </Link>
             </NavbarMenuItem>
           ))}
+          <NavbarMenuItem>
+            <div className="flex gap-3 mt-4">
+              <Link isExternal aria-label="Twitter" href={siteConfig.links.twitter}>
+                <TwitterIcon className="text-default-500" />
+              </Link>
+              <Link isExternal aria-label="Github" href={siteConfig.links.github}>
+                <GithubIcon className="text-default-500" />
+              </Link>
+            </div>
+          </NavbarMenuItem>
         </div>
       </NavbarMenu>
     </HeroUINavbar>
