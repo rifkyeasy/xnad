@@ -187,86 +187,89 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
         </CardBody>
       </Card>
 
-      {/* Positions */}
-      <Card className="border border-success/40 shadow-none bg-transparent">
-        <CardHeader className="flex flex-row justify-between items-center pb-0">
-          <h2 className="text-sm font-bold">Positions</h2>
-          <Button
-            isLoading={positionsLoading}
-            size="sm"
-            variant="light"
-            onPress={() => refetchPositions()}
-          >
-            Refresh
-          </Button>
-        </CardHeader>
-        <CardBody>
-          {positionsLoading && positions.length === 0 ? (
-            <div className="flex justify-center py-6">
-              <Spinner size="sm" />
-            </div>
-          ) : positions.length === 0 ? (
-            <p className="text-default-500 text-center text-sm py-6">
-              No positions yet. The agent will trade based on signals.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {positions.map((position) => (
-                <PositionCard key={position.tokenAddress} position={position} />
-              ))}
-            </div>
-          )}
-        </CardBody>
-      </Card>
+      {/* Positions + Automation — side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Positions */}
+        <Card className="border border-success/40 shadow-none bg-transparent">
+          <CardHeader className="flex flex-row justify-between items-center pb-0">
+            <h2 className="text-sm font-bold">Positions</h2>
+            <Button
+              isLoading={positionsLoading}
+              size="sm"
+              variant="light"
+              onPress={() => refetchPositions()}
+            >
+              Refresh
+            </Button>
+          </CardHeader>
+          <CardBody>
+            {positionsLoading && positions.length === 0 ? (
+              <div className="flex justify-center py-6">
+                <Spinner size="sm" />
+              </div>
+            ) : positions.length === 0 ? (
+              <p className="text-default-500 text-center text-sm py-6">
+                No positions yet. The agent will trade based on signals.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {positions.map((position) => (
+                  <PositionCard key={position.tokenAddress} position={position} />
+                ))}
+              </div>
+            )}
+          </CardBody>
+        </Card>
 
-      {/* Automation */}
-      <Card className="border border-success/40 shadow-none bg-transparent">
-        <CardHeader className="pb-0">
-          <h2 className="text-sm font-bold">Automation</h2>
-        </CardHeader>
-        <CardBody className="gap-4">
-          <div className="flex justify-between items-center gap-4">
-            <div className="min-w-0">
-              <p className="text-sm font-medium">Auto-Trade</p>
-              <p className="text-xs text-default-500">Execute trades from AI signals</p>
+        {/* Automation */}
+        <Card className="border border-success/40 shadow-none bg-transparent">
+          <CardHeader className="pb-0">
+            <h2 className="text-sm font-bold">Automation</h2>
+          </CardHeader>
+          <CardBody className="gap-4">
+            <div className="flex justify-between items-center gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">Auto-Trade</p>
+                <p className="text-xs text-default-500">Execute trades from AI signals</p>
+              </div>
+              <Switch
+                color="success"
+                isDisabled={settingsLoading}
+                isSelected={autoTrade}
+                size="sm"
+                onValueChange={handleAutoTradeChange}
+              />
             </div>
-            <Switch
-              color="success"
-              isDisabled={settingsLoading}
-              isSelected={autoTrade}
-              size="sm"
-              onValueChange={handleAutoTradeChange}
-            />
-          </div>
-          <div className="flex justify-between items-center gap-4">
-            <div className="min-w-0">
-              <p className="text-sm font-medium">Auto-Rebalance</p>
-              <p className="text-xs text-default-500">Rebalance to target allocations</p>
+            <div className="flex justify-between items-center gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">Auto-Rebalance</p>
+                <p className="text-xs text-default-500">Rebalance to target allocations</p>
+              </div>
+              <Switch
+                color="success"
+                isDisabled={settingsLoading}
+                isSelected={autoRebalance}
+                size="sm"
+                onValueChange={handleAutoRebalanceChange}
+              />
             </div>
-            <Switch
-              color="success"
-              isDisabled={settingsLoading}
-              isSelected={autoRebalance}
-              size="sm"
-              onValueChange={handleAutoRebalanceChange}
-            />
-          </div>
-          <div className="flex gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-default-500">Stop-Loss</span>
-              <Chip color="danger" size="sm" variant="flat">
-                {stopLossPercent ? `-${stopLossPercent}%` : 'N/A'}
-              </Chip>
+            <div className="flex gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-default-500">Stop-Loss</span>
+                <Chip color="danger" size="sm" variant="flat">
+                  {stopLossPercent ? `-${stopLossPercent}%` : 'N/A'}
+                </Chip>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-default-500">Take-Profit</span>
+                <Chip color="success" size="sm" variant="flat">
+                  {takeProfitPercent ? `+${takeProfitPercent}%` : 'N/A'}
+                </Chip>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-default-500">Take-Profit</span>
-              <Chip color="success" size="sm" variant="flat">
-                {takeProfitPercent ? `+${takeProfitPercent}%` : 'N/A'}
-              </Chip>
-            </div>
-          </div>
-        </CardBody>
-      </Card>
+          </CardBody>
+        </Card>
+      </div>
 
       {/* Deposit Modal */}
       <Modal isOpen={depositModal.isOpen} onClose={depositModal.onClose}>
