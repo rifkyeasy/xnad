@@ -12,7 +12,7 @@ export default function NotFound() {
         className="px-6 py-3 rounded-xl bg-primary text-white font-medium hover:opacity-90 transition-opacity"
         href="/"
       >
-        Back to Dashboard
+        Back to Portfolio
       </Link>
     </div>
   );

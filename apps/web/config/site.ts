@@ -6,7 +6,7 @@ export const siteConfig = {
   url: 'https://xnad.fun',
   navItems: [
     {
-      label: 'Dashboard',
+      label: 'Portfolio',
       href: '/',
     },
     {
@@ -16,7 +16,7 @@ export const siteConfig = {
   ],
   navMenuItems: [
     {
-      label: 'Dashboard',
+      label: 'Portfolio',
       href: '/',
     },
     {
