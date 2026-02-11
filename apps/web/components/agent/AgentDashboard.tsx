@@ -14,7 +14,6 @@ import {
   useDisclosure,
 } from '@heroui/modal';
 import { Progress } from '@heroui/progress';
-import { Divider } from '@heroui/divider';
 import { Spinner } from '@heroui/spinner';
 import { useState } from 'react';
 
@@ -118,12 +117,11 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
   const totalPnl = positions.reduce((sum, p) => sum + parseFloat(p.unrealizedPnl), 0);
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header Card */}
-      <Card className="border border-default-200">
-        <CardBody className="p-4 sm:p-6">
-          {/* Stats Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+    <div className="flex flex-col gap-4">
+      {/* Stats + Actions */}
+      <Card className="border border-success/40 shadow-none bg-transparent">
+        <CardBody className="p-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <div>
               <p className="text-xs text-default-500 uppercase tracking-wider">Strategy</p>
               <Chip className="mt-1" color={strategyColors[strategyKey]} size="sm">
@@ -131,25 +129,23 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
               </Chip>
             </div>
             <div>
-              <p className="text-xs text-default-500 uppercase tracking-wider">Vault Balance</p>
-              <p className="text-xl font-bold mt-1">{parseFloat(balance).toFixed(4)} MON</p>
+              <p className="text-xs text-default-500 uppercase tracking-wider">Vault</p>
+              <p className="text-lg font-bold mt-0.5">{parseFloat(balance).toFixed(2)} MON</p>
             </div>
             <div>
               <p className="text-xs text-default-500 uppercase tracking-wider">Total Value</p>
-              <p className="text-xl font-bold mt-1">{totalValue.toFixed(4)} MON</p>
+              <p className="text-lg font-bold mt-0.5">{totalValue.toFixed(2)} MON</p>
             </div>
             <div>
               <p className="text-xs text-default-500 uppercase tracking-wider">P&L</p>
               <p
-                className={`text-xl font-bold mt-1 ${totalPnl >= 0 ? 'text-success' : 'text-danger'}`}
+                className={`text-lg font-bold mt-0.5 ${totalPnl >= 0 ? 'text-success' : 'text-danger'}`}
               >
                 {totalPnl >= 0 ? '+' : ''}
-                {totalPnl.toFixed(4)} MON
+                {totalPnl.toFixed(2)} MON
               </p>
             </div>
           </div>
-
-          {/* Actions */}
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="flat" onPress={depositModal.onOpen}>
               Deposit
@@ -164,31 +160,36 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
               variant="flat"
               onPress={() => setPaused(!paused)}
             >
-              {paused ? 'Resume Agent' : 'Pause Agent'}
+              {paused ? 'Resume' : 'Pause'}
             </Button>
           </div>
         </CardBody>
       </Card>
 
       {/* Positions */}
-      <Card className="border border-default-200">
-        <CardHeader className="flex flex-row justify-between items-center">
-          <h2 className="text-lg font-bold">Current Positions</h2>
-          <Button isLoading={positionsLoading} size="sm" variant="flat" onPress={refetchPositions}>
+      <Card className="border border-success/40 shadow-none bg-transparent">
+        <CardHeader className="flex flex-row justify-between items-center pb-0">
+          <h2 className="text-sm font-bold">Positions</h2>
+          <Button
+            isLoading={positionsLoading}
+            size="sm"
+            variant="light"
+            onPress={() => refetchPositions()}
+          >
             Refresh
           </Button>
         </CardHeader>
         <CardBody>
           {positionsLoading && positions.length === 0 ? (
-            <div className="flex justify-center py-8">
-              <Spinner />
+            <div className="flex justify-center py-6">
+              <Spinner size="sm" />
             </div>
           ) : positions.length === 0 ? (
-            <p className="text-default-500 text-center py-8">
-              No positions yet. The agent will start trading based on signals.
+            <p className="text-default-500 text-center text-sm py-6">
+              No positions yet. The agent will trade based on signals.
             </p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {positions.map((position) => (
                 <PositionCard key={position.tokenAddress} position={position} />
               ))}
@@ -197,57 +198,49 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
         </CardBody>
       </Card>
 
-      {/* Automation Settings */}
-      <Card className="border border-default-200">
-        <CardHeader>
-          <h2 className="text-lg font-bold">Automation</h2>
+      {/* Automation */}
+      <Card className="border border-success/40 shadow-none bg-transparent">
+        <CardHeader className="pb-0">
+          <h2 className="text-sm font-bold">Automation</h2>
         </CardHeader>
-        <CardBody className="gap-6">
+        <CardBody className="gap-4">
           <div className="flex justify-between items-center gap-4">
             <div className="min-w-0">
-              <p className="font-medium">Auto-Trade</p>
-              <p className="text-sm text-default-500">
-                Automatically execute trades based on AI signals
-              </p>
+              <p className="text-sm font-medium">Auto-Trade</p>
+              <p className="text-xs text-default-500">Execute trades from AI signals</p>
             </div>
             <Switch
               color="success"
               isDisabled={settingsLoading}
               isSelected={autoTrade}
+              size="sm"
               onValueChange={handleAutoTradeChange}
             />
           </div>
-
-          <Divider />
-
           <div className="flex justify-between items-center gap-4">
             <div className="min-w-0">
-              <p className="font-medium">Auto-Rebalance</p>
-              <p className="text-sm text-default-500">
-                Automatically rebalance portfolio to target allocations
-              </p>
+              <p className="text-sm font-medium">Auto-Rebalance</p>
+              <p className="text-xs text-default-500">Rebalance to target allocations</p>
             </div>
             <Switch
               color="success"
               isDisabled={settingsLoading}
               isSelected={autoRebalance}
+              size="sm"
               onValueChange={handleAutoRebalanceChange}
             />
           </div>
-
-          <Divider />
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="font-medium mb-2">Stop-Loss</p>
-              <Chip color="danger" variant="flat">
-                {stopLossPercent ? `-${stopLossPercent}%` : 'Not set'}
+          <div className="flex gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-default-500">Stop-Loss</span>
+              <Chip color="danger" size="sm" variant="flat">
+                {stopLossPercent ? `-${stopLossPercent}%` : 'N/A'}
               </Chip>
             </div>
-            <div>
-              <p className="font-medium mb-2">Take-Profit</p>
-              <Chip color="success" variant="flat">
-                {takeProfitPercent ? `+${takeProfitPercent}%` : 'Not set'}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-default-500">Take-Profit</span>
+              <Chip color="success" size="sm" variant="flat">
+                {takeProfitPercent ? `+${takeProfitPercent}%` : 'N/A'}
               </Chip>
             </div>
           </div>
@@ -313,36 +306,27 @@ function PositionCard({ position }: { position: Position }) {
   const isProfit = pnlPercent >= 0;
 
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 bg-default-100 rounded-xl">
+    <div className="flex items-center justify-between gap-3 p-3 bg-default-100 rounded-lg">
       <div className="min-w-0">
-        <p className="font-bold">{position.tokenSymbol}</p>
-        <p className="text-sm text-default-500 font-mono">
+        <p className="font-bold text-sm">{position.tokenSymbol}</p>
+        <p className="text-xs text-default-500 font-mono">
           {position.tokenAddress.slice(0, 6)}...{position.tokenAddress.slice(-4)}
         </p>
       </div>
-      <div className="text-left sm:text-right">
-        <p className="font-medium">{parseFloat(position.balance).toFixed(4)} tokens</p>
-        <p className="text-sm text-default-500">
-          Value: {parseFloat(position.currentValue).toFixed(4)} MON
-        </p>
-      </div>
-      <div className="flex items-center gap-3">
-        <div className="text-left sm:text-right">
-          <p className={`font-bold ${isProfit ? 'text-success' : 'text-danger'}`}>
+      <div className="text-right shrink-0">
+        <p className="text-sm">{parseFloat(position.currentValue).toFixed(2)} MON</p>
+        <div className="flex items-center gap-2 justify-end">
+          <p className={`text-xs font-bold ${isProfit ? 'text-success' : 'text-danger'}`}>
             {isProfit ? '+' : ''}
             {pnlPercent.toFixed(2)}%
           </p>
-          <p className={`text-sm ${isProfit ? 'text-success' : 'text-danger'}`}>
-            {isProfit ? '+' : ''}
-            {parseFloat(position.unrealizedPnl).toFixed(4)} MON
-          </p>
+          <Progress
+            className="w-12"
+            color={isProfit ? 'success' : 'danger'}
+            size="sm"
+            value={Math.min(Math.abs(pnlPercent), 100)}
+          />
         </div>
-        <Progress
-          className="w-16 sm:w-20"
-          color={isProfit ? 'success' : 'danger'}
-          size="sm"
-          value={Math.min(Math.abs(pnlPercent), 100)}
-        />
       </div>
     </div>
   );

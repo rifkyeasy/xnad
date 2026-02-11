@@ -28,7 +28,7 @@ export function XProfileCard({ profile, isSelected, onClick, size = 'md' }: XPro
 
   return (
     <Card
-      className={`${isSelected ? 'border-2 border-primary bg-primary/5' : 'border border-default-200'} transition-all`}
+      className={`${isSelected ? 'border-2 border-success bg-success/5' : 'border border-success/40 shadow-none bg-transparent'} transition-all`}
       isPressable={!!onClick}
       onPress={onClick}
     >
@@ -70,7 +70,7 @@ export function XProfileList({
     return (
       <div className="space-y-2">
         {[1, 2, 3].map((i) => (
-          <Card key={i} className="border border-default-200">
+          <Card key={i} className="border border-success/40 shadow-none bg-transparent">
             <CardBody className="p-3 flex flex-row items-center gap-3">
               <Skeleton className="w-10 h-10 rounded-full" />
               <div className="flex-1 space-y-2">

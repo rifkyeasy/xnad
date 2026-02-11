@@ -7,10 +7,12 @@ import { Button } from '@heroui/button';
 import { Input } from '@heroui/input';
 import { Spinner } from '@heroui/spinner';
 import { Progress } from '@heroui/progress';
-import { Divider } from '@heroui/divider';
+import { Avatar } from '@heroui/avatar';
+import { Skeleton } from '@heroui/skeleton';
 
 import { useVaultFactory, useVault } from '@/hooks/useVault';
 import { useAgentStore, type StrategyType } from '@/stores/agent';
+import { useWatchedXProfiles } from '@/hooks/useXProfiles';
 import { StrategyCards } from '@/components/agent/StrategyCards';
 import { AgentDashboard } from '@/components/agent/AgentDashboard';
 import { STRATEGY_CONFIG, StrategyType as StrategyEnum } from '@/config/contracts';
@@ -43,6 +45,7 @@ export default function AgentPage() {
 
   const [xInput, setXInput] = useState('');
   const [isCreatingVault, setIsCreatingVault] = useState(false);
+  const { profiles: watchedProfiles, isLoading: profilesLoading } = useWatchedXProfiles();
 
   useEffect(() => {
     if (hasVault && vaultAddress && selectedStrategy) {
@@ -153,56 +156,12 @@ export default function AgentPage() {
   // Not connected
   if (!isConnected) {
     return (
-      <div className="container mx-auto max-w-4xl py-8 px-4">
-        <Card className="border border-default-200">
-          <CardBody className="py-12 px-6">
-            <div className="text-center mb-8">
-              <div className="text-5xl mb-4">🤖</div>
-              <h1 className="text-3xl font-bold mb-3">AI Trading Agent</h1>
-              <p className="text-default-500 max-w-md mx-auto">
-                Connect your wallet to set up AI-powered automated trading on nad.fun
-              </p>
-            </div>
-
-            <Divider className="my-6" />
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto">
-              <div className="text-center">
-                <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-lg font-bold mx-auto mb-3">
-                  1
-                </div>
-                <p className="font-medium text-sm">Analyze X Profile</p>
-                <p className="text-xs text-default-400 mt-1">
-                  AI reads your tweets to understand your risk tolerance
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-10 h-10 rounded-full bg-secondary/10 text-secondary flex items-center justify-center text-lg font-bold mx-auto mb-3">
-                  2
-                </div>
-                <p className="font-medium text-sm">Choose Strategy</p>
-                <p className="text-xs text-default-400 mt-1">
-                  Pick from Conservative, Balanced, or Aggressive
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-10 h-10 rounded-full bg-success/10 text-success flex items-center justify-center text-lg font-bold mx-auto mb-3">
-                  3
-                </div>
-                <p className="font-medium text-sm">Auto-Trade</p>
-                <p className="text-xs text-default-400 mt-1">
-                  AI executes trades based on social signals
-                </p>
-              </div>
-            </div>
-
-            <div className="text-center mt-8">
-              <p className="text-sm text-default-400">
-                Use the Connect Wallet button in the navbar to get started
-              </p>
-            </div>
-          </CardBody>
-        </Card>
+      <div className="container mx-auto max-w-xl py-12 px-4 text-center">
+        <p className="text-4xl mb-4">🤖</p>
+        <h1 className="text-2xl font-bold mb-2">AI Trading Agent</h1>
+        <p className="text-default-500">
+          Connect your wallet to set up AI-powered trading on nad.fun
+        </p>
       </div>
     );
   }
@@ -210,7 +169,7 @@ export default function AgentPage() {
   // Dashboard
   if (step === 'dashboard' && vaultAddress) {
     return (
-      <div className="container mx-auto max-w-6xl py-8 px-4">
+      <div className="container mx-auto max-w-4xl py-8 px-4">
         <h1 className="text-2xl font-bold mb-6">AI Trading Agent</h1>
         <AgentDashboard vaultAddress={vaultAddress} />
       </div>
@@ -220,24 +179,22 @@ export default function AgentPage() {
   // Strategy selection
   if (step === 'select' && xAnalysis) {
     return (
-      <div className="container mx-auto max-w-6xl py-8 px-4">
+      <div className="container mx-auto max-w-4xl py-8 px-4">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold mb-2">Choose Your Strategy</h1>
-          <p className="text-default-500">
-            Based on your X profile @{xHandle}, we recommend the{' '}
-            <span className="font-bold text-primary">{recommendedStrategy}</span> strategy
+          <p className="text-default-500 text-sm">
+            Based on @{xHandle}, we recommend{' '}
+            <span className="font-bold text-primary">{recommendedStrategy}</span>
           </p>
           {xAnalysis.reasoning && (
-            <p className="text-sm text-default-400 mt-2 max-w-2xl mx-auto">{xAnalysis.reasoning}</p>
+            <p className="text-sm text-default-400 mt-2 max-w-lg mx-auto">{xAnalysis.reasoning}</p>
           )}
         </div>
 
         {error && (
-          <Card className="mb-6 bg-danger-50">
-            <CardBody>
-              <p className="text-danger">{error}</p>
-            </CardBody>
-          </Card>
+          <div className="bg-danger-50 p-3 rounded-lg mb-6">
+            <p className="text-danger text-sm">{error}</p>
+          </div>
         )}
 
         <StrategyCards
@@ -251,14 +208,13 @@ export default function AgentPage() {
 
   // X Analysis step
   return (
-    <div className="container mx-auto max-w-xl py-8 px-4">
-      <Card className="border border-default-200">
-        <CardBody className="gap-6 p-6">
+    <div className="container mx-auto max-w-md py-8 px-4">
+      <Card className="border border-success/40 shadow-none bg-transparent">
+        <CardBody className="gap-5 p-6">
           <div className="text-center">
-            <div className="text-4xl mb-3">🔍</div>
-            <h1 className="text-2xl font-bold mb-2">Start AI Trading</h1>
+            <h1 className="text-xl font-bold mb-1">Start AI Trading</h1>
             <p className="text-default-500 text-sm">
-              Enter your X handle to analyze your profile and get a personalized trading strategy
+              Enter your X handle to get a personalized trading strategy
             </p>
           </div>
 
@@ -277,10 +233,48 @@ export default function AgentPage() {
             onValueChange={setXInput}
           />
 
+          {/* Quick Select */}
+          <div>
+            <p className="text-xs text-default-500 uppercase tracking-wider mb-2">Quick select</p>
+            <div className="flex flex-wrap gap-2">
+              {profilesLoading
+                ? Array.from({ length: 2 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-success/20"
+                    >
+                      <Skeleton className="w-5 h-5 rounded-full" />
+                      <Skeleton className="w-14 h-3 rounded" />
+                    </div>
+                  ))
+                : watchedProfiles.map((profile) => (
+                    <button
+                      key={profile.username}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
+                        xInput.toLowerCase() === profile.username.toLowerCase()
+                          ? 'border-success bg-success/10 text-success'
+                          : 'border-success/20 hover:border-success/50 hover:bg-success/5'
+                      }`}
+                      disabled={isAnalyzing}
+                      type="button"
+                      onClick={() => setXInput(profile.username)}
+                    >
+                      <Avatar
+                        showFallback
+                        className="w-5 h-5"
+                        name={profile.name}
+                        src={profile.avatar}
+                      />
+                      <span className="text-sm">@{profile.username}</span>
+                    </button>
+                  ))}
+            </div>
+          </div>
+
           {isAnalyzing ? (
             <div className="text-center py-4">
               <Spinner size="lg" />
-              <p className="text-default-500 mt-4 text-sm">Analyzing your profile...</p>
+              <p className="text-default-500 mt-3 text-sm">Analyzing profile...</p>
               <Progress isIndeterminate className="mt-2" color="primary" size="sm" />
             </div>
           ) : (
@@ -294,38 +288,6 @@ export default function AgentPage() {
               Analyze & Get Strategy
             </Button>
           )}
-
-          <Divider />
-
-          <div className="space-y-3">
-            <p className="text-xs text-default-500 font-medium uppercase tracking-wider">
-              What happens next
-            </p>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-default-100 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
-                1
-              </div>
-              <p className="text-sm text-default-500">
-                AI analyzes your tweets to understand your risk tolerance and trading style
-              </p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-default-100 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
-                2
-              </div>
-              <p className="text-sm text-default-500">
-                You get a recommended strategy with customized stop-loss and take-profit levels
-              </p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-default-100 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
-                3
-              </div>
-              <p className="text-sm text-default-500">
-                A vault is created on-chain and the AI agent starts monitoring signals for you
-              </p>
-            </div>
-          </div>
         </CardBody>
       </Card>
     </div>

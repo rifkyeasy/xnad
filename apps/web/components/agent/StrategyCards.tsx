@@ -17,13 +17,11 @@ interface StrategyConfig {
   metrics: {
     confidence: string;
     maxTrade: string;
-    riskLevel: string;
     stopLoss: string;
     takeProfit: string;
   };
 }
 
-// Map strategy enum to UI config
 const STRATEGIES: StrategyConfig[] = [
   {
     type: 'CONSERVATIVE',
@@ -34,9 +32,6 @@ const STRATEGIES: StrategyConfig[] = [
     metrics: {
       confidence: `>${(STRATEGY_CONFIG[StrategyEnum.CONSERVATIVE].minConfidence * 100).toFixed(0)}%`,
       maxTrade: `${STRATEGY_CONFIG[StrategyEnum.CONSERVATIVE].maxTradeAmount} MON`,
-      riskLevel: STRATEGY_CONFIG[StrategyEnum.CONSERVATIVE].riskLevels
-        .map((r) => r.charAt(0).toUpperCase() + r.slice(1))
-        .join(' only'),
       stopLoss: `${(STRATEGY_CONFIG[StrategyEnum.CONSERVATIVE].stopLoss * 100).toFixed(0)}%`,
       takeProfit: `${(STRATEGY_CONFIG[StrategyEnum.CONSERVATIVE].takeProfit * 100).toFixed(0)}%`,
     },
@@ -50,9 +45,6 @@ const STRATEGIES: StrategyConfig[] = [
     metrics: {
       confidence: `${(STRATEGY_CONFIG[StrategyEnum.BALANCED].minConfidence * 100).toFixed(0)}-85%`,
       maxTrade: `${STRATEGY_CONFIG[StrategyEnum.BALANCED].maxTradeAmount} MON`,
-      riskLevel: STRATEGY_CONFIG[StrategyEnum.BALANCED].riskLevels
-        .map((r) => r.charAt(0).toUpperCase() + r.slice(1))
-        .join(' & '),
       stopLoss: `${(STRATEGY_CONFIG[StrategyEnum.BALANCED].stopLoss * 100).toFixed(0)}%`,
       takeProfit: `${(STRATEGY_CONFIG[StrategyEnum.BALANCED].takeProfit * 100).toFixed(0)}%`,
     },
@@ -66,7 +58,6 @@ const STRATEGIES: StrategyConfig[] = [
     metrics: {
       confidence: `${(STRATEGY_CONFIG[StrategyEnum.AGGRESSIVE].minConfidence * 100).toFixed(0)}-70%`,
       maxTrade: `${STRATEGY_CONFIG[StrategyEnum.AGGRESSIVE].maxTradeAmount} MON`,
-      riskLevel: 'All levels',
       stopLoss: `${(STRATEGY_CONFIG[StrategyEnum.AGGRESSIVE].stopLoss * 100).toFixed(0)}%`,
       takeProfit: `${(STRATEGY_CONFIG[StrategyEnum.AGGRESSIVE].takeProfit * 100).toFixed(0)}%`,
     },
@@ -81,44 +72,40 @@ interface StrategyCardsProps {
 
 export function StrategyCards({ recommendedStrategy, onSelect, isLoading }: StrategyCardsProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {STRATEGIES.map((strategy) => {
         const isRecommended = strategy.type === recommendedStrategy;
 
         return (
           <Card
             key={strategy.type}
-            className={`relative ${isRecommended ? 'ring-2 ring-primary' : ''}`}
+            className={`border shadow-none bg-transparent relative ${isRecommended ? 'border-success border-2' : 'border-success/30'}`}
           >
             {isRecommended && (
               <Chip
                 className="absolute -top-2 left-1/2 -translate-x-1/2 z-10"
-                color="primary"
+                color="success"
                 size="sm"
               >
                 Recommended
               </Chip>
             )}
 
-            <CardBody className="gap-4 pt-6">
+            <CardBody className="gap-3 pt-6">
               <div className="text-center">
-                <span className="text-4xl">{strategy.icon}</span>
-                <h3 className="text-xl font-bold mt-2">{strategy.title}</h3>
-                <p className="text-default-500 text-sm mt-1">{strategy.description}</p>
+                <span className="text-3xl">{strategy.icon}</span>
+                <h3 className="text-lg font-bold mt-1">{strategy.title}</h3>
+                <p className="text-default-500 text-xs mt-1">{strategy.description}</p>
               </div>
 
-              <div className="space-y-2 mt-4">
+              <div className="space-y-1.5 mt-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-default-500">Min Confidence</span>
+                  <span className="text-default-500">Confidence</span>
                   <span className="font-medium">{strategy.metrics.confidence}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-default-500">Max Trade</span>
                   <span className="font-medium">{strategy.metrics.maxTrade}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-default-500">Risk Level</span>
-                  <span className="font-medium">{strategy.metrics.riskLevel}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-default-500">Stop-Loss</span>

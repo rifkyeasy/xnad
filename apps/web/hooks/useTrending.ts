@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 export interface TrendingToken {
   address: string;
@@ -17,7 +17,6 @@ export interface TrendingToken {
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
-// Fallback trending tokens for testnet
 const FALLBACK_TOKENS: TrendingToken[] = [
   {
     address: '0xFBD84ab1526BfbA7533b1EC2842894eE92777777',
@@ -28,7 +27,7 @@ const FALLBACK_TOKENS: TrendingToken[] = [
     volume24h: 8000,
     holders: 15,
     progress: 5,
-    createdAt: Date.now() - 30 * 60 * 1000, // 30 min ago
+    createdAt: Date.now() - 30 * 60 * 1000,
   },
   {
     address: '0x2F0292D4b34601D97ee7E52b2058f11928B87777',
@@ -39,7 +38,7 @@ const FALLBACK_TOKENS: TrendingToken[] = [
     volume24h: 5000,
     holders: 10,
     progress: 5,
-    createdAt: Date.now() - 1 * 60 * 60 * 1000, // 1 hour ago
+    createdAt: Date.now() - 1 * 60 * 60 * 1000,
   },
   {
     address: '0x350035555E10d9AfAF1566AaebfCeD5BA6C27777',
@@ -98,74 +97,61 @@ const FALLBACK_TOKENS: TrendingToken[] = [
   },
 ];
 
-export function useTrending() {
-  const [tokens, setTokens] = useState<TrendingToken[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+async function fetchTrending(): Promise<TrendingToken[]> {
+  // Try nad.fun API first
+  try {
+    const response = await fetch('https://testnet-api.nad.fun/tokens?sort=trending&limit=10');
 
-  useEffect(() => {
-    async function fetchTrending() {
-      setIsLoading(true);
-      setError(null);
+    if (response.ok) {
+      const data = await response.json();
 
-      try {
-        // Try nad.fun API first
-        const response = await fetch('https://testnet-api.nad.fun/tokens?sort=trending&limit=10');
-
-        if (response.ok) {
-          const data = await response.json();
-
-          if (data.tokens && data.tokens.length > 0) {
-            setTokens(
-              data.tokens.map((t: Record<string, unknown>) => ({
-                address: t.address as string,
-                name: t.name as string,
-                symbol: t.symbol as string,
-                imageUrl: t.imageUrl as string | undefined,
-                marketCap: Number(t.marketCap) || 0,
-                priceChange24h: Number(t.priceChange24h) || 0,
-                volume24h: Number(t.volume24h) || 0,
-                holders: Number(t.holders) || 0,
-                progress: Number(t.progress) || 0,
-                createdAt: Number(t.createdAt) || Date.now(),
-              }))
-            );
-            setIsLoading(false);
-
-            return;
-          }
-        }
-      } catch {
-        // API failed, try backend
+      if (data.tokens?.length > 0) {
+        return data.tokens.map((t: Record<string, unknown>) => ({
+          address: t.address as string,
+          name: t.name as string,
+          symbol: t.symbol as string,
+          imageUrl: t.imageUrl as string | undefined,
+          marketCap: Number(t.marketCap) || 0,
+          priceChange24h: Number(t.priceChange24h) || 0,
+          volume24h: Number(t.volume24h) || 0,
+          holders: Number(t.holders) || 0,
+          progress: Number(t.progress) || 0,
+          createdAt: Number(t.createdAt) || Date.now(),
+        }));
       }
-
-      try {
-        // Try our backend
-        const response = await fetch(`${BACKEND_URL}/api/tokens/trending`);
-
-        if (response.ok) {
-          const data = await response.json();
-
-          if (data.length > 0) {
-            setTokens(data);
-            setIsLoading(false);
-
-            return;
-          }
-        }
-      } catch {
-        // Backend failed too
-      }
-
-      // Use fallback tokens
-      setTokens(FALLBACK_TOKENS);
-      setIsLoading(false);
     }
+  } catch {
+    // fall through
+  }
 
-    fetchTrending();
-  }, []);
+  // Try backend
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/tokens/trending`);
 
-  return { tokens, isLoading, error };
+    if (response.ok) {
+      const data = await response.json();
+
+      if (data.length > 0) return data;
+    }
+  } catch {
+    // fall through
+  }
+
+  return FALLBACK_TOKENS;
+}
+
+export function useTrending() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['trending'],
+    queryFn: fetchTrending,
+    staleTime: 60 * 1000, // 1 min
+  });
+
+  return {
+    tokens: data ?? [],
+    isLoading,
+    error: error?.message ?? null,
+  };
 }
 
 export function formatMarketCap(value: number): string {

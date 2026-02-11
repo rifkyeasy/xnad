@@ -15,7 +15,7 @@ export function WalletButton() {
   const truncatedAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '';
 
   const formattedBalance = balance
-    ? `${parseFloat(formatEther(balance.value)).toFixed(4)} MON`
+    ? `${parseFloat(formatEther(balance.value)).toFixed(2)} MON`
     : '0 MON';
 
   if (isConnected && address) {

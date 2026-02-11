@@ -167,6 +167,38 @@ app.get('/api/indexer/stats', async (c) => {
   }
 });
 
+// ============================================
+// X Profile Routes
+// ============================================
+
+// Get watched X account profiles
+app.get('/api/x/watched', async (c) => {
+  try {
+    const { getXProfiles, WATCHED_X_ACCOUNTS } = await import('./services/x-profile-service.js');
+    const profiles = await getXProfiles(WATCHED_X_ACCOUNTS);
+    return c.json(profiles);
+  } catch (error) {
+    console.error('Error fetching watched profiles:', error);
+    return c.json({ error: 'Failed to fetch profiles' }, 500);
+  }
+});
+
+// Get single X profile by username
+app.get('/api/x/profile/:username', async (c) => {
+  const username = c.req.param('username');
+  try {
+    const { getXProfile } = await import('./services/x-profile-service.js');
+    const profile = await getXProfile(username);
+    if (!profile) {
+      return c.json({ error: 'Profile not found' }, 404);
+    }
+    return c.json(profile);
+  } catch (error) {
+    console.error('Error fetching X profile:', error);
+    return c.json({ error: 'Failed to fetch profile' }, 500);
+  }
+});
+
 // Error handler
 app.onError((err, c) => {
   console.error('Server error:', err);
