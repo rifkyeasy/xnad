@@ -7,6 +7,9 @@ import { useState } from 'react';
 import { VAULT_CONTRACTS } from '@/config/contracts';
 import { txToast } from '@/components/TxToast';
 import { useChainCheck } from '@/hooks/useChainCheck';
+import { monadTestnet } from '@/config/wagmi';
+
+const CHAIN_ID = monadTestnet.id;
 
 const USER_VAULT_ABI = [
   {
@@ -149,6 +152,7 @@ export function useVaultFactory(userAddress?: string) {
     txToast('pending', 'Creating vault...');
     try {
       const hash = await writeContractAsync({
+        chainId: CHAIN_ID,
         address: VAULT_FACTORY_ADDRESS,
         abi: VAULT_FACTORY_ABI,
         functionName: 'createVault',
@@ -230,6 +234,7 @@ export function useVault(vaultAddress?: string | null) {
     txToast('pending', `Depositing ${amount} MON...`);
     try {
       const hash = await writeContractAsync({
+        chainId: CHAIN_ID,
         address: vaultAddress as `0x${string}`,
         abi: USER_VAULT_ABI,
         functionName: 'deposit',
@@ -251,6 +256,7 @@ export function useVault(vaultAddress?: string | null) {
     txToast('pending', `Withdrawing ${amount} MON...`);
     try {
       const hash = await writeContractAsync({
+        chainId: CHAIN_ID,
         address: vaultAddress as `0x${string}`,
         abi: USER_VAULT_ABI,
         functionName: 'withdraw',
@@ -272,6 +278,7 @@ export function useVault(vaultAddress?: string | null) {
     txToast('pending', 'Withdrawing all MON...');
     try {
       const hash = await writeContractAsync({
+        chainId: CHAIN_ID,
         address: vaultAddress as `0x${string}`,
         abi: USER_VAULT_ABI,
         functionName: 'withdrawAll',
@@ -292,6 +299,7 @@ export function useVault(vaultAddress?: string | null) {
     txToast('pending', 'Setting strategy...');
     try {
       const hash = await writeContractAsync({
+        chainId: CHAIN_ID,
         address: vaultAddress as `0x${string}`,
         abi: USER_VAULT_ABI,
         functionName: 'setStrategy',
@@ -313,6 +321,7 @@ export function useVault(vaultAddress?: string | null) {
     txToast('pending', isPaused ? 'Pausing vault...' : 'Resuming vault...');
     try {
       const hash = await writeContractAsync({
+        chainId: CHAIN_ID,
         address: vaultAddress as `0x${string}`,
         abi: USER_VAULT_ABI,
         functionName: 'setPaused',
