@@ -7,6 +7,7 @@ import { Button } from '@heroui/button';
 import { Input } from '@heroui/input';
 import { Spinner } from '@heroui/spinner';
 import { Progress } from '@heroui/progress';
+import { Divider } from '@heroui/divider';
 
 import { useVaultFactory, useVault } from '@/hooks/useVault';
 import { useAgentStore, type StrategyType } from '@/stores/agent';
@@ -43,7 +44,6 @@ export default function AgentPage() {
   const [xInput, setXInput] = useState('');
   const [isCreatingVault, setIsCreatingVault] = useState(false);
 
-  // Check if user already has a vault
   useEffect(() => {
     if (hasVault && vaultAddress && selectedStrategy) {
       setVaultAddress(vaultAddress);
@@ -53,7 +53,6 @@ export default function AgentPage() {
     }
   }, [hasVault, vaultAddress, isConnected, xAnalysis, selectedStrategy, setVaultAddress, setStep]);
 
-  // Analyze X account
   const handleAnalyze = async () => {
     if (!xInput || !address) return;
 
@@ -61,14 +60,12 @@ export default function AgentPage() {
     setError(null);
 
     try {
-      // Create user first
       await fetch(`${BACKEND_URL}/api/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ walletAddress: address }),
       });
 
-      // Analyze X account
       const res = await fetch(`${BACKEND_URL}/api/users/${address}/analyze-x`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -84,7 +81,6 @@ export default function AgentPage() {
       setXHandle(xInput);
       setXAnalysis(data.analysis, data.recommendedStrategy);
 
-      // Set default stop-loss/take-profit based on strategy using central config
       const strategyEnumMap: Record<StrategyType, StrategyEnum> = {
         CONSERVATIVE: StrategyEnum.CONSERVATIVE,
         BALANCED: StrategyEnum.BALANCED,
@@ -96,6 +92,7 @@ export default function AgentPage() {
       setStopLoss(strategyConfig.stopLoss * 100);
       setTakeProfit(strategyConfig.takeProfit * 100);
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('Analysis error:', err);
       setError(err instanceof Error ? err.message : 'Analysis failed');
     } finally {
@@ -103,7 +100,6 @@ export default function AgentPage() {
     }
   };
 
-  // Select strategy and create vault
   const handleSelectStrategy = async (strategy: StrategyType) => {
     if (!address) return;
 
@@ -112,21 +108,18 @@ export default function AgentPage() {
     setError(null);
 
     try {
-      // Create vault if needed
       let vault = vaultAddress;
 
       if (!hasVault) {
         const txHash = await createVault();
 
+        // eslint-disable-next-line no-console
         console.log('Vault creation tx:', txHash);
-        // Wait a bit for the vault to be created
         await new Promise((r) => setTimeout(r, 3000));
-        // Refetch vault address
         vault = vaultAddress;
       }
 
       if (vault) {
-        // Set strategy on-chain using central config
         const strategyEnumMap: Record<StrategyType, StrategyEnum> = {
           CONSERVATIVE: StrategyEnum.CONSERVATIVE,
           BALANCED: StrategyEnum.BALANCED,
@@ -137,7 +130,6 @@ export default function AgentPage() {
 
         await setStrategy(strategyIndex, strategyConfig.maxTradeAmount);
 
-        // Update backend
         await fetch(`${BACKEND_URL}/api/users/${address}/strategy`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -150,6 +142,7 @@ export default function AgentPage() {
         setVaultAddress(vault);
       }
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('Strategy selection error:', err);
       setError(err instanceof Error ? err.message : 'Failed to set strategy');
     } finally {
@@ -160,21 +153,61 @@ export default function AgentPage() {
   // Not connected
   if (!isConnected) {
     return (
-      <div className="container mx-auto max-w-4xl py-12 px-4">
-        <Card>
-          <CardBody className="text-center py-12">
-            <h1 className="text-2xl font-bold mb-4">AI Trading Agent</h1>
-            <p className="text-default-500 mb-6">
-              Connect your wallet to get started with AI-powered trading
-            </p>
-            <p className="text-sm text-default-400">Use the Connect Wallet button in the navbar</p>
+      <div className="container mx-auto max-w-4xl py-8 px-4">
+        <Card className="border border-default-200">
+          <CardBody className="py-12 px-6">
+            <div className="text-center mb-8">
+              <div className="text-5xl mb-4">🤖</div>
+              <h1 className="text-3xl font-bold mb-3">AI Trading Agent</h1>
+              <p className="text-default-500 max-w-md mx-auto">
+                Connect your wallet to set up AI-powered automated trading on nad.fun
+              </p>
+            </div>
+
+            <Divider className="my-6" />
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto">
+              <div className="text-center">
+                <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-lg font-bold mx-auto mb-3">
+                  1
+                </div>
+                <p className="font-medium text-sm">Analyze X Profile</p>
+                <p className="text-xs text-default-400 mt-1">
+                  AI reads your tweets to understand your risk tolerance
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="w-10 h-10 rounded-full bg-secondary/10 text-secondary flex items-center justify-center text-lg font-bold mx-auto mb-3">
+                  2
+                </div>
+                <p className="font-medium text-sm">Choose Strategy</p>
+                <p className="text-xs text-default-400 mt-1">
+                  Pick from Conservative, Balanced, or Aggressive
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="w-10 h-10 rounded-full bg-success/10 text-success flex items-center justify-center text-lg font-bold mx-auto mb-3">
+                  3
+                </div>
+                <p className="font-medium text-sm">Auto-Trade</p>
+                <p className="text-xs text-default-400 mt-1">
+                  AI executes trades based on social signals
+                </p>
+              </div>
+            </div>
+
+            <div className="text-center mt-8">
+              <p className="text-sm text-default-400">
+                Use the Connect Wallet button in the navbar to get started
+              </p>
+            </div>
           </CardBody>
         </Card>
       </div>
     );
   }
 
-  // Dashboard (has vault and strategy selected)
+  // Dashboard
   if (step === 'dashboard' && vaultAddress) {
     return (
       <div className="container mx-auto max-w-6xl py-8 px-4">
@@ -218,14 +251,14 @@ export default function AgentPage() {
 
   // X Analysis step
   return (
-    <div className="container mx-auto max-w-xl py-12 px-4">
-      <Card>
-        <CardBody className="gap-6">
+    <div className="container mx-auto max-w-xl py-8 px-4">
+      <Card className="border border-default-200">
+        <CardBody className="gap-6 p-6">
           <div className="text-center">
+            <div className="text-4xl mb-3">🔍</div>
             <h1 className="text-2xl font-bold mb-2">Start AI Trading</h1>
-            <p className="text-default-500">
-              Enter your X/Twitter handle to analyze your profile and get a personalized trading
-              strategy
+            <p className="text-default-500 text-sm">
+              Enter your X handle to analyze your profile and get a personalized trading strategy
             </p>
           </div>
 
@@ -247,7 +280,7 @@ export default function AgentPage() {
           {isAnalyzing ? (
             <div className="text-center py-4">
               <Spinner size="lg" />
-              <p className="text-default-500 mt-4">Analyzing your profile...</p>
+              <p className="text-default-500 mt-4 text-sm">Analyzing your profile...</p>
               <Progress isIndeterminate className="mt-2" color="primary" size="sm" />
             </div>
           ) : (
@@ -262,10 +295,37 @@ export default function AgentPage() {
             </Button>
           )}
 
-          <p className="text-xs text-default-400 text-center">
-            We analyze your tweets to understand your risk tolerance and trading experience, then
-            recommend a suitable strategy.
-          </p>
+          <Divider />
+
+          <div className="space-y-3">
+            <p className="text-xs text-default-500 font-medium uppercase tracking-wider">
+              What happens next
+            </p>
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-default-100 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                1
+              </div>
+              <p className="text-sm text-default-500">
+                AI analyzes your tweets to understand your risk tolerance and trading style
+              </p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-default-100 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                2
+              </div>
+              <p className="text-sm text-default-500">
+                You get a recommended strategy with customized stop-loss and take-profit levels
+              </p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-default-100 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                3
+              </div>
+              <p className="text-sm text-default-500">
+                A vault is created on-chain and the AI agent starts monitoring signals for you
+              </p>
+            </div>
+          </div>
         </CardBody>
       </Card>
     </div>

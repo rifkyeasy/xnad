@@ -50,29 +50,25 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
     refetchBalance,
   } = useVault(vaultAddress);
 
-  // Fetch real positions from backend
   const {
     positions: backendPositions,
     isLoading: positionsLoading,
     refetch: refetchPositions,
   } = usePositions();
 
-  // Fetch and sync user settings with backend
   const { settings, isLoading: settingsLoading, updateSettings } = useUserSettings();
 
-  // Get trade history
-  const { trades } = useTradeHistory(10);
+  // Keep trade history hook for future use
+  useTradeHistory(10);
 
   const { selectedStrategy } = useAgentStore();
 
-  // Use backend positions, fallback to store positions
   const positions = backendPositions.length > 0 ? backendPositions : [];
   const autoTrade = settings.autoTrade;
   const autoRebalance = settings.autoRebalance;
   const stopLossPercent = settings.stopLossPercent;
   const takeProfitPercent = settings.takeProfitPercent;
 
-  // Handle settings changes
   const handleAutoTradeChange = async (value: boolean) => {
     await updateSettings({ autoTrade: value });
   };
@@ -95,6 +91,7 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
       depositModal.onClose();
       refetchBalance();
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Deposit failed:', error);
     }
   };
@@ -107,6 +104,7 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
       withdrawModal.onClose();
       refetchBalance();
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Withdraw failed:', error);
     }
   };
@@ -115,7 +113,6 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
     selectedStrategy ||
     (strategyType === 0 ? 'CONSERVATIVE' : strategyType === 2 ? 'AGGRESSIVE' : 'BALANCED');
 
-  // Calculate total portfolio value
   const totalPositionValue = positions.reduce((sum, p) => sum + parseFloat(p.currentValue), 0);
   const totalValue = parseFloat(balance) + totalPositionValue;
   const totalPnl = positions.reduce((sum, p) => sum + parseFloat(p.unrealizedPnl), 0);
@@ -123,39 +120,47 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* Header Card */}
-      <Card>
-        <CardBody className="flex flex-row justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Chip color={strategyColors[strategyKey]} size="lg">
-              {strategyLabels[strategyKey]}
-            </Chip>
+      <Card className="border border-default-200">
+        <CardBody className="p-4 sm:p-6">
+          {/* Stats Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
             <div>
-              <p className="text-sm text-default-500">Vault Balance</p>
-              <p className="text-2xl font-bold">{parseFloat(balance).toFixed(4)} MON</p>
-            </div>
-            <Divider className="h-12" orientation="vertical" />
-            <div>
-              <p className="text-sm text-default-500">Total Value</p>
-              <p className="text-2xl font-bold">{totalValue.toFixed(4)} MON</p>
+              <p className="text-xs text-default-500 uppercase tracking-wider">Strategy</p>
+              <Chip className="mt-1" color={strategyColors[strategyKey]} size="sm">
+                {strategyLabels[strategyKey]}
+              </Chip>
             </div>
             <div>
-              <p className="text-sm text-default-500">Unrealized P&L</p>
-              <p className={`text-xl font-bold ${totalPnl >= 0 ? 'text-success' : 'text-danger'}`}>
+              <p className="text-xs text-default-500 uppercase tracking-wider">Vault Balance</p>
+              <p className="text-xl font-bold mt-1">{parseFloat(balance).toFixed(4)} MON</p>
+            </div>
+            <div>
+              <p className="text-xs text-default-500 uppercase tracking-wider">Total Value</p>
+              <p className="text-xl font-bold mt-1">{totalValue.toFixed(4)} MON</p>
+            </div>
+            <div>
+              <p className="text-xs text-default-500 uppercase tracking-wider">P&L</p>
+              <p
+                className={`text-xl font-bold mt-1 ${totalPnl >= 0 ? 'text-success' : 'text-danger'}`}
+              >
                 {totalPnl >= 0 ? '+' : ''}
                 {totalPnl.toFixed(4)} MON
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="flat" onPress={depositModal.onOpen}>
+
+          {/* Actions */}
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="flat" onPress={depositModal.onOpen}>
               Deposit
             </Button>
-            <Button variant="flat" onPress={withdrawModal.onOpen}>
+            <Button size="sm" variant="flat" onPress={withdrawModal.onOpen}>
               Withdraw
             </Button>
             <Button
               color={paused ? 'success' : 'danger'}
               isLoading={isConfirming}
+              size="sm"
               variant="flat"
               onPress={() => setPaused(!paused)}
             >
@@ -166,8 +171,8 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
       </Card>
 
       {/* Positions */}
-      <Card>
-        <CardHeader className="flex justify-between items-center">
+      <Card className="border border-default-200">
+        <CardHeader className="flex flex-row justify-between items-center">
           <h2 className="text-lg font-bold">Current Positions</h2>
           <Button isLoading={positionsLoading} size="sm" variant="flat" onPress={refetchPositions}>
             Refresh
@@ -183,7 +188,7 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
               No positions yet. The agent will start trading based on signals.
             </p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {positions.map((position) => (
                 <PositionCard key={position.tokenAddress} position={position} />
               ))}
@@ -193,13 +198,13 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
       </Card>
 
       {/* Automation Settings */}
-      <Card>
+      <Card className="border border-default-200">
         <CardHeader>
           <h2 className="text-lg font-bold">Automation</h2>
         </CardHeader>
         <CardBody className="gap-6">
-          <div className="flex justify-between items-center">
-            <div>
+          <div className="flex justify-between items-center gap-4">
+            <div className="min-w-0">
               <p className="font-medium">Auto-Trade</p>
               <p className="text-sm text-default-500">
                 Automatically execute trades based on AI signals
@@ -215,8 +220,8 @@ export function AgentDashboard({ vaultAddress }: AgentDashboardProps) {
 
           <Divider />
 
-          <div className="flex justify-between items-center">
-            <div>
+          <div className="flex justify-between items-center gap-4">
+            <div className="min-w-0">
               <p className="font-medium">Auto-Rebalance</p>
               <p className="text-sm text-default-500">
                 Automatically rebalance portfolio to target allocations
@@ -308,35 +313,37 @@ function PositionCard({ position }: { position: Position }) {
   const isProfit = pnlPercent >= 0;
 
   return (
-    <div className="flex justify-between items-center p-4 bg-default-100 rounded-lg">
-      <div>
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 bg-default-100 rounded-xl">
+      <div className="min-w-0">
         <p className="font-bold">{position.tokenSymbol}</p>
         <p className="text-sm text-default-500 font-mono">
           {position.tokenAddress.slice(0, 6)}...{position.tokenAddress.slice(-4)}
         </p>
       </div>
-      <div className="text-right">
+      <div className="text-left sm:text-right">
         <p className="font-medium">{parseFloat(position.balance).toFixed(4)} tokens</p>
         <p className="text-sm text-default-500">
           Value: {parseFloat(position.currentValue).toFixed(4)} MON
         </p>
       </div>
-      <div className="text-right">
-        <p className={`font-bold ${isProfit ? 'text-success' : 'text-danger'}`}>
-          {isProfit ? '+' : ''}
-          {pnlPercent.toFixed(2)}%
-        </p>
-        <p className={`text-sm ${isProfit ? 'text-success' : 'text-danger'}`}>
-          {isProfit ? '+' : ''}
-          {parseFloat(position.unrealizedPnl).toFixed(4)} MON
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="text-left sm:text-right">
+          <p className={`font-bold ${isProfit ? 'text-success' : 'text-danger'}`}>
+            {isProfit ? '+' : ''}
+            {pnlPercent.toFixed(2)}%
+          </p>
+          <p className={`text-sm ${isProfit ? 'text-success' : 'text-danger'}`}>
+            {isProfit ? '+' : ''}
+            {parseFloat(position.unrealizedPnl).toFixed(4)} MON
+          </p>
+        </div>
+        <Progress
+          className="w-16 sm:w-20"
+          color={isProfit ? 'success' : 'danger'}
+          size="sm"
+          value={Math.min(Math.abs(pnlPercent), 100)}
+        />
       </div>
-      <Progress
-        className="w-20"
-        color={isProfit ? 'success' : 'danger'}
-        size="sm"
-        value={Math.min(Math.abs(pnlPercent), 100)}
-      />
     </div>
   );
 }

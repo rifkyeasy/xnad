@@ -13,10 +13,6 @@ export const siteConfig = {
       label: 'Agent',
       href: '/agent',
     },
-    {
-      label: 'Trade',
-      href: '/trade',
-    },
   ],
   navMenuItems: [
     {
@@ -26,10 +22,6 @@ export const siteConfig = {
     {
       label: 'Agent',
       href: '/agent',
-    },
-    {
-      label: 'Trade',
-      href: '/trade',
     },
   ],
   links: {
