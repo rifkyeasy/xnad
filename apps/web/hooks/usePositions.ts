@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAccount } from 'wagmi';
 import { useMemo } from 'react';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.xnad.fun';
 
 interface IndexerPosition {
   id: string;

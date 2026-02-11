@@ -15,7 +15,7 @@ export interface TrendingToken {
   createdAt: number;
 }
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.xnad.fun';
 
 const FALLBACK_TOKENS: TrendingToken[] = [
   {
