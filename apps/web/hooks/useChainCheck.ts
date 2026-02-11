@@ -1,13 +1,14 @@
 'use client';
 
-import { useChainId, useSwitchChain } from 'wagmi';
+import { useAccount, useSwitchChain } from 'wagmi';
 import { useCallback } from 'react';
 
 import { monadTestnet } from '@/config/wagmi';
 
 export function useChainCheck() {
-  const chainId = useChainId();
-  const { switchChain, isPending } = useSwitchChain();
+  // useAccount().chainId returns the wallet's ACTUAL chain, not wagmi config
+  const { chainId } = useAccount();
+  const { switchChainAsync, isPending } = useSwitchChain();
 
   const isCorrectChain = chainId === monadTestnet.id;
 
@@ -15,13 +16,13 @@ export function useChainCheck() {
     if (isCorrectChain) return true;
 
     try {
-      await switchChain({ chainId: monadTestnet.id });
+      await switchChainAsync({ chainId: monadTestnet.id });
 
       return true;
     } catch {
       return false;
     }
-  }, [isCorrectChain, switchChain]);
+  }, [isCorrectChain, switchChainAsync]);
 
   return {
     isCorrectChain,
@@ -29,7 +30,7 @@ export function useChainCheck() {
     expectedChainId: monadTestnet.id,
     expectedChainName: monadTestnet.name,
     ensureCorrectChain,
-    switchToMonad: () => switchChain({ chainId: monadTestnet.id }),
+    switchToMonad: () => switchChainAsync({ chainId: monadTestnet.id }),
     isSwitching: isPending,
   };
 }
