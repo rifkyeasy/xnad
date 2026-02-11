@@ -8,10 +8,10 @@ import { getNadFunClient } from './nadfun-client.js';
 import { formatEther, parseEther } from 'viem';
 
 // Indexer API URL
-const INDEXER_URL = process.env.INDEXER_URL || 'http://localhost:42069';
+const INDEXER_URL = process.env.INDEXER_URL || 'https://indexer.xnad.fun';
 
 // Backend API URL
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://api.xnad.fun';
 
 // Position data from indexer
 interface IndexerPosition {

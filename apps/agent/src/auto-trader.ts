@@ -14,7 +14,7 @@ import {
 import { ENV } from './config.js';
 import { log } from './logger.js';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://api.xnad.fun';
 
 export interface TokenInfo {
   address: string;

@@ -11,7 +11,7 @@ import { getPositionManager, type VaultWithPositions } from './position-manager.
 import { getStrategyConfig, type StrategyConfig, type StrategyType } from './strategy-classifier.js';
 
 // Backend API URL
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://api.xnad.fun';
 
 // Vault check interval (30 seconds)
 const VAULT_CHECK_INTERVAL = 30000;
