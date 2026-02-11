@@ -4,6 +4,7 @@ import type { Position } from '@/stores/agent';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAccount } from 'wagmi';
+import { useMemo } from 'react';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
@@ -302,4 +303,99 @@ export function useVaultInfo(vaultAddress?: string) {
     error: error?.message ?? null,
     refetch,
   };
+}
+
+// --- Portfolio Chart (real data) ---
+
+export interface ChartPoint {
+  date: string;
+  value: number;
+}
+
+function formatChartDate(d: Date): string {
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+export function usePortfolioChart(vaultAddress?: string) {
+  const { address } = useAccount();
+  const targetAddress = vaultAddress || address;
+
+  const { trades } = useTradeHistory(100);
+  const { vault } = useVaultInfo(targetAddress || undefined);
+  const { positions } = usePositions();
+
+  const vaultBalance = vault ? parseFloat(vault.balance) : 0;
+  const positionsValue = positions.reduce((sum, p) => sum + parseFloat(p.currentValue || '0'), 0);
+  const currentValue = vaultBalance + positionsValue;
+  const totalDeposited = vault ? parseFloat(vault.totalDeposited) : 0;
+
+  const chartData = useMemo((): ChartPoint[] => {
+    const now = Date.now();
+
+    // No vault yet — empty
+    if (totalDeposited <= 0 && currentValue <= 0) return [];
+
+    const sorted = [...trades]
+      .filter((t) => t.status === 'COMPLETED' || t.status === 'SUCCESS')
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+    // No trades — flat line at current value
+    if (sorted.length === 0) {
+      return [
+        { date: formatChartDate(new Date(now - 7 * 86400000)), value: currentValue },
+        { date: formatChartDate(new Date(now)), value: currentValue },
+      ];
+    }
+
+    const startTime = new Date(sorted[0].createdAt).getTime() - 86400000;
+    const endTime = now;
+    const startValue = totalDeposited;
+
+    const points: ChartPoint[] = [];
+
+    // Starting point: deposit (day before first trade)
+    points.push({ date: formatChartDate(new Date(startTime)), value: startValue });
+
+    // Each trade creates a data point at its real timestamp.
+    // Value is interpolated from deposit→current, adjusted by trade cash flow.
+    let cumBuyCost = 0;
+    let cumSellProceeds = 0;
+
+    for (const trade of sorted) {
+      const tradeTime = new Date(trade.createdAt).getTime();
+      const progress = Math.min(1, (tradeTime - startTime) / (endTime - startTime));
+
+      if (trade.action === 'BUY') {
+        cumBuyCost += parseFloat(trade.amountIn);
+      } else {
+        cumSellProceeds += parseFloat(trade.amountOut);
+      }
+
+      // Net cash flow from trading (positive means profitable sells)
+      const tradingPnl = cumSellProceeds - cumBuyCost;
+
+      // Blend: time-based interpolation + trading cash flow signal
+      const interpolated = startValue + progress * (currentValue - startValue);
+      const value = interpolated + tradingPnl * 0.3;
+
+      points.push({
+        date: formatChartDate(new Date(trade.createdAt)),
+        value: Math.max(0, parseFloat(value.toFixed(2))),
+      });
+    }
+
+    // Current point: real value
+    points.push({ date: formatChartDate(new Date(now)), value: currentValue });
+
+    // Deduplicate same-date entries (keep last)
+    const seen = new Map<string, ChartPoint>();
+
+    for (const p of points) {
+      seen.set(p.date, p);
+    }
+
+    return Array.from(seen.values());
+  }, [trades, totalDeposited, currentValue]);
+
+  return { chartData, currentValue, totalDeposited };
 }
