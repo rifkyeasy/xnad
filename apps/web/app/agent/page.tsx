@@ -208,7 +208,7 @@ export default function AgentPage() {
 
   // X Analysis step
   return (
-    <div className="container mx-auto max-w-md py-8 px-4">
+    <div className="container mx-auto max-w-md pb-8 px-4">
       <Card className="border border-success/40 shadow-none bg-transparent">
         <CardBody className="gap-5 p-6">
           <div className="text-center">
